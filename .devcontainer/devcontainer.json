@@ -7,7 +7,7 @@
   },
 
   // Alles einmalig nach dem Container-Build installieren (inline, kein Shell-Script → kein CRLF-Problem)
-  "postCreateCommand": "pip install -r backend/requirements.txt && npm --prefix frontend install && mkdir -p data && ([ -f .env ] || cp .env.example .env && echo '.env aus .env.example angelegt – bitte ADMIN_PIN_HASH setzen!')",
+  "postCreateCommand": "pip install -r backend/requirements.txt && npm --prefix frontend install && mkdir -p data && ([ -f .env ] || cp .env.example .env && echo '.env aus .env.example angelegt – bitte ADMIN_PIN setzen!')",
 
   // Ports automatisch weiterleiten
   "forwardPorts": [8420, 5173],
