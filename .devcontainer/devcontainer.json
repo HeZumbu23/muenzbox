@@ -1,0 +1,47 @@
+{
+  "name": "Münzbox Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bullseye",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+  },
+
+  // Alles einmalig nach dem Container-Build installieren
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // Ports automatisch weiterleiten
+  "forwardPorts": [8420, 5173],
+  "portsAttributes": {
+    "8420": { "label": "Backend API" },
+    "5173": { "label": "Frontend", "onAutoForward": "openBrowser" }
+  },
+
+  // Im Devcontainer: API läuft auf localhost, nicht auf 'backend' (Docker-Compose-Name)
+  "remoteEnv": {
+    "VITE_API_TARGET": "http://localhost:8420",
+    "USE_MOCK_ADAPTERS": "true"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.black-formatter",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        },
+        "[javascriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  }
+}
