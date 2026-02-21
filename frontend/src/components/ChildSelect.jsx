@@ -6,11 +6,13 @@ const AVATARS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸',
 export default function ChildSelect({ onSelect }) {
   const [children, setChildren] = useState([])
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getChildren()
       .then(setChildren)
       .catch(() => setError('Verbindung fehlgeschlagen'))
+      .finally(() => setLoading(false))
   }, [])
 
   return (
@@ -20,6 +22,13 @@ export default function ChildSelect({ onSelect }) {
 
       {error && (
         <p className="text-red-300 text-lg mb-4 font-bold">{error}</p>
+      )}
+
+      {!loading && !error && children.length === 0 && (
+        <p className="text-white/60 text-lg font-bold text-center">
+          Noch keine Kinder angelegt.<br />
+          <span className="text-white/40 text-base">Bitte im Eltern-Bereich hinzufügen.</span>
+        </p>
       )}
 
       <div className="grid grid-cols-2 gap-5 w-full max-w-lg">

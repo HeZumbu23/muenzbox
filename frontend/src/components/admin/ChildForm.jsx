@@ -1,5 +1,21 @@
 import { useState } from 'react'
 
+function Field({ label, value, type = 'text', min, max, onChange }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">{label}</label>
+      <input
+        type={type}
+        value={value}
+        min={min}
+        max={max}
+        onChange={onChange}
+        className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
+      />
+    </div>
+  )
+}
+
 export default function ChildForm({ child, onSave, onClose }) {
   const isNew = !child
   const [form, setForm] = useState({
@@ -22,26 +38,11 @@ export default function ChildForm({ child, onSave, onClose }) {
     if (!form.name.trim()) { alert('Name erforderlich'); return }
     if (isNew && form.pin.length < 4) { alert('PIN: mindestens 4 Ziffern'); return }
     setSaving(true)
-    // Only include pin if it was entered
     const data = { ...form }
     if (!data.pin) delete data.pin
     await onSave(data)
     setSaving(false)
   }
-
-  const F = ({ label, k, type = 'text', min, max }) => (
-    <div className="flex flex-col gap-1">
-      <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">{label}</label>
-      <input
-        type={type}
-        value={form[k]}
-        min={min}
-        max={max}
-        onChange={(e) => update(k, type === 'number' ? parseInt(e.target.value) || 0 : e.target.value)}
-        className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-      />
-    </div>
-  )
 
   return (
     <div className="absolute inset-0 bg-black/80 flex items-end justify-center z-50">
@@ -54,32 +55,41 @@ export default function ChildForm({ child, onSave, onClose }) {
         </div>
 
         <div className="flex flex-col gap-4">
-          <F label="Name" k="name" />
-          <F label={isNew ? 'PIN (min. 4 Ziffern)' : 'Neue PIN (leer lassen = unverändert)'} k="pin" type="number" />
+          <Field
+            label="Name"
+            value={form.name}
+            onChange={(e) => update('name', e.target.value)}
+          />
+          <Field
+            label={isNew ? 'PIN (min. 4 Ziffern)' : 'Neue PIN (leer lassen = unverändert)'}
+            value={form.pin}
+            type="number"
+            onChange={(e) => update('pin', e.target.value)}
+          />
 
           <div className="border-t border-gray-700 pt-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">🎮 Nintendo Switch</p>
             <div className="grid grid-cols-3 gap-3">
-              <F label="Aktuell" k="switch_coins" type="number" min={0} />
-              <F label="+/Woche" k="switch_coins_weekly" type="number" min={0} />
-              <F label="Maximum" k="switch_coins_max" type="number" min={1} />
+              <Field label="Aktuell" value={form.switch_coins} type="number" min={0} onChange={(e) => update('switch_coins', parseInt(e.target.value) || 0)} />
+              <Field label="+/Woche" value={form.switch_coins_weekly} type="number" min={0} onChange={(e) => update('switch_coins_weekly', parseInt(e.target.value) || 0)} />
+              <Field label="Maximum" value={form.switch_coins_max} type="number" min={1} onChange={(e) => update('switch_coins_max', parseInt(e.target.value) || 0)} />
             </div>
           </div>
 
           <div className="border-t border-gray-700 pt-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">📺 Fernseher</p>
             <div className="grid grid-cols-3 gap-3">
-              <F label="Aktuell" k="tv_coins" type="number" min={0} />
-              <F label="+/Woche" k="tv_coins_weekly" type="number" min={0} />
-              <F label="Maximum" k="tv_coins_max" type="number" min={1} />
+              <Field label="Aktuell" value={form.tv_coins} type="number" min={0} onChange={(e) => update('tv_coins', parseInt(e.target.value) || 0)} />
+              <Field label="+/Woche" value={form.tv_coins_weekly} type="number" min={0} onChange={(e) => update('tv_coins_weekly', parseInt(e.target.value) || 0)} />
+              <Field label="Maximum" value={form.tv_coins_max} type="number" min={1} onChange={(e) => update('tv_coins_max', parseInt(e.target.value) || 0)} />
             </div>
           </div>
 
           <div className="border-t border-gray-700 pt-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">⏰ Erlaubte Zeiten</p>
             <div className="grid grid-cols-2 gap-3">
-              <F label="Von" k="allowed_from" type="time" />
-              <F label="Bis" k="allowed_until" type="time" />
+              <Field label="Von" value={form.allowed_from} type="time" onChange={(e) => update('allowed_from', e.target.value)} />
+              <Field label="Bis" value={form.allowed_until} type="time" onChange={(e) => update('allowed_until', e.target.value)} />
             </div>
           </div>
 
