@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 import aiosqlite
 from database import get_db
-from auth import hash_pin, verify_pin, create_token, get_current_admin
+from auth import hash_pin, create_token, get_current_admin
 from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust
 from adapters import mikrotik_direct, nintendo
 
@@ -12,15 +12,13 @@ USE_MOCK = os.getenv("USE_MOCK_ADAPTERS", "false").lower() == "true"
 
 router = APIRouter()
 
-ADMIN_PIN_HASH = os.getenv("ADMIN_PIN_HASH", "")
+ADMIN_PIN = os.getenv("ADMIN_PIN", "1234")
 
 
 @router.post("/verify")
 async def admin_verify(body: AdminVerify):
     """Verify admin PIN and return admin token."""
-    if not ADMIN_PIN_HASH:
-        raise HTTPException(status_code=503, detail="Admin-PIN nicht konfiguriert")
-    if not verify_pin(body.pin, ADMIN_PIN_HASH):
+    if body.pin != ADMIN_PIN:
         raise HTTPException(status_code=401, detail="Falsche Admin-PIN")
     token = create_token({"sub": "admin", "role": "admin"}, expires_hours=12)
     return {"token": token}
