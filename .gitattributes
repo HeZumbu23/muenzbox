@@ -1,0 +1,9 @@
+# Alle Textdateien immer mit LF im Repository (wichtig für Shell-Scripts im Devcontainer)
+* text=auto eol=lf
+
+# Shell-Scripts explizit LF erzwingen
+*.sh text eol=lf
+
+# Windows-spezifische Ausnahmen (keine vorhanden, aber der Vollständigkeit halber)
+*.bat text eol=crlf
+*.cmd text eol=crlf
