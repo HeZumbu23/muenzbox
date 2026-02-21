@@ -8,6 +8,8 @@ from auth import hash_pin, verify_pin, create_token, get_current_admin
 from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust
 from adapters import mikrotik_direct, nintendo
 
+USE_MOCK = os.getenv("USE_MOCK_ADAPTERS", "false").lower() == "true"
+
 router = APIRouter()
 
 ADMIN_PIN_HASH = os.getenv("ADMIN_PIN_HASH", "")
@@ -191,6 +193,17 @@ async def admin_cancel_session(
         await nintendo.switch_sperren()
 
     return {"ok": True}
+
+
+# --- Mock-Status (nur im Simulations-Modus) ---
+
+@router.get("/mock-status")
+async def admin_mock_status(_: dict = Depends(get_current_admin)):
+    """Zeigt den aktuellen simulierten Gerätezustand (nur wenn USE_MOCK_ADAPTERS=true)."""
+    if not USE_MOCK:
+        raise HTTPException(status_code=404, detail="Nur im Mock-Modus verfügbar")
+    from adapters.mock import get_mock_status
+    return get_mock_status()
 
 
 # --- Coin log ---

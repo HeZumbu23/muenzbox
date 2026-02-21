@@ -85,3 +85,6 @@ export const adminCancelSession = (sessionId, token) =>
 
 export const adminGetCoinLog = (childId, token) =>
   request(`/admin/coin-log${childId ? `?child_id=${childId}` : ''}`, { token })
+
+export const adminGetMockStatus = (token) =>
+  request('/admin/mock-status', { token })

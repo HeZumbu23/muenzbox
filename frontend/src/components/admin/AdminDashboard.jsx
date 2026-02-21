@@ -1,13 +1,41 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   adminGetChildren, adminGetSessions, adminGetCoinLog,
   adminCancelSession, adminDeleteChild, adminAdjustCoins,
-  adminCreateChild, adminUpdateChild
+  adminCreateChild, adminUpdateChild, adminGetMockStatus
 } from '../../api.js'
 import ChildForm from './ChildForm.jsx'
 import CoinLogView from './CoinLogView.jsx'
 
 const TABS = ['Kinder', 'Sessions', 'Münz-Log']
+
+function MockStatusBar({ token }) {
+  const [status, setStatus] = useState(null)
+
+  useEffect(() => {
+    const load = () =>
+      adminGetMockStatus(token)
+        .then(setStatus)
+        .catch(() => setStatus(null)) // Not in mock mode → hide bar
+    load()
+    const iv = setInterval(load, 3000)
+    return () => clearInterval(iv)
+  }, [token])
+
+  if (!status) return null
+
+  return (
+    <div className="flex items-center gap-4 px-4 py-2 bg-yellow-500/20 border-b border-yellow-500/40 text-xs font-bold">
+      <span className="text-yellow-400 uppercase tracking-widest">🧪 Simulations-Modus</span>
+      <span className={status.tv_unlocked ? 'text-green-400' : 'text-gray-400'}>
+        📺 TV: {status.tv_unlocked ? 'freigegeben ✅' : 'gesperrt 🔒'}
+      </span>
+      <span className={status.switch_unlocked ? 'text-green-400' : 'text-gray-400'}>
+        🎮 Switch: {status.switch_unlocked ? `${status.switch_minutes} Min ✅` : 'gesperrt 🔒'}
+      </span>
+    </div>
+  )
+}
 
 export default function AdminDashboard({ token, onLogout }) {
   const [tab, setTab] = useState('Kinder')
@@ -83,6 +111,8 @@ export default function AdminDashboard({ token, onLogout }) {
           Abmelden
         </button>
       </div>
+
+      <MockStatusBar token={token} />
 
       {/* Tabs */}
       <div className="flex border-b border-gray-700">

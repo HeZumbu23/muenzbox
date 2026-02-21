@@ -4,12 +4,16 @@ MikroTik RouterOS v7 REST API Adapter.
 TV-IP is managed via Address-List "tv-blocked".
 disabled=true  → IP is excluded from the list → TV is UNLOCKED (freigegeben)
 disabled=false → IP is active in the list → TV is BLOCKED (gesperrt)
+
+Set USE_MOCK_ADAPTERS=true to skip real hardware and use in-memory simulation.
 """
 import os
 import httpx
 import logging
 
 logger = logging.getLogger(__name__)
+
+USE_MOCK = os.getenv("USE_MOCK_ADAPTERS", "false").lower() == "true"
 
 MIKROTIK_HOST = os.getenv("MIKROTIK_HOST", "")
 MIKROTIK_USER = os.getenv("MIKROTIK_USER", "")
@@ -51,9 +55,13 @@ async def _get_tv_entry_id() -> str | None:
 
 async def tv_freigeben() -> bool:
     """Unlock TV: set address-list entry to disabled=true."""
+    if USE_MOCK:
+        from adapters.mock import mock_tv_freigeben
+        return mock_tv_freigeben()
+
     if not MIKROTIK_HOST:
-        logger.warning("MikroTik: Host nicht konfiguriert, simuliere Freigabe")
-        return True
+        logger.warning("MikroTik: Host nicht konfiguriert")
+        return False
     entry_id = await _get_tv_entry_id()
     if not entry_id:
         logger.error("MikroTik: TV-Eintrag nicht gefunden")
@@ -75,9 +83,13 @@ async def tv_freigeben() -> bool:
 
 async def tv_sperren() -> bool:
     """Block TV: set address-list entry to disabled=false."""
+    if USE_MOCK:
+        from adapters.mock import mock_tv_sperren
+        return mock_tv_sperren()
+
     if not MIKROTIK_HOST:
-        logger.warning("MikroTik: Host nicht konfiguriert, simuliere Sperrung")
-        return True
+        logger.warning("MikroTik: Host nicht konfiguriert")
+        return False
     entry_id = await _get_tv_entry_id()
     if not entry_id:
         logger.error("MikroTik: TV-Eintrag nicht gefunden")
@@ -99,6 +111,10 @@ async def tv_sperren() -> bool:
 
 async def tv_status() -> bool:
     """Returns True if TV is currently unlocked (disabled=true)."""
+    if USE_MOCK:
+        from adapters.mock import mock_tv_status
+        return mock_tv_status()
+
     if not MIKROTIK_HOST:
         return False
     entry_id = await _get_tv_entry_id()
