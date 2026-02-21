@@ -2,6 +2,7 @@ const BASE = '/api'
 
 async function request(path, options = {}) {
   const resp = await fetch(BASE + path, {
+    signal: AbortSignal.timeout(10000),
     headers: {
       'Content-Type': 'application/json',
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),

@@ -38,10 +38,13 @@ export default function ChildForm({ child, onSave, onClose }) {
     if (!form.name.trim()) { alert('Name erforderlich'); return }
     if (isNew && form.pin.length < 4) { alert('PIN: mindestens 4 Ziffern'); return }
     setSaving(true)
-    const data = { ...form }
-    if (!data.pin) delete data.pin
-    await onSave(data)
-    setSaving(false)
+    try {
+      const data = { ...form }
+      if (!data.pin) delete data.pin
+      await onSave(data)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
