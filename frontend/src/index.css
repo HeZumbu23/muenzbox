@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  body {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-yellow-400 hover:bg-yellow-300 active:scale-95 text-gray-900
+           font-extrabold rounded-3xl shadow-lg transition-all duration-150
+           flex items-center justify-center;
+  }
+
+  .btn-secondary {
+    @apply bg-white/20 hover:bg-white/30 active:scale-95 text-white
+           font-bold rounded-3xl shadow transition-all duration-150
+           flex items-center justify-center;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 hover:bg-red-400 active:scale-95 text-white
+           font-extrabold rounded-3xl shadow-lg transition-all duration-150
+           flex items-center justify-center;
+  }
+
+  .coin-icon {
+    @apply inline-block text-4xl drop-shadow;
+  }
+}

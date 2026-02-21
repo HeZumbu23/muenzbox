@@ -1,0 +1,36 @@
+services:
+  backend:
+    build: ./backend
+    container_name: muenzbox-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_PATH=/data/muenzbox.db
+    volumes:
+      - ./data:/data
+    networks:
+      - muenzbox
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8420/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: muenzbox-frontend
+    restart: unless-stopped
+    ports:
+      - "8421:8421"
+    networks:
+      - muenzbox
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  muenzbox:
+    driver: bridge
+
+volumes:
+  data:
