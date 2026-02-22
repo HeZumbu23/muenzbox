@@ -1,7 +1,7 @@
 services:
   backend:
     build: ./backend
-    image: muenzbox-backend:latest
+    image: ghcr.io/hezumbu23/muenzbox-backend:latest
     container_name: muenzbox-backend
     restart: unless-stopped
     environment:
@@ -18,7 +18,7 @@ services:
 
   frontend:
     build: ./frontend
-    image: muenzbox-frontend:latest
+    image: ghcr.io/hezumbu23/muenzbox-frontend:latest
     container_name: muenzbox-frontend
     restart: unless-stopped
     ports:
