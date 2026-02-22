@@ -1,0 +1,46 @@
+{
+  "name": "Münzbox Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bullseye",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
+  },
+
+  // Alles einmalig nach dem Container-Build installieren – mit || true damit alle Schritte laufen
+  "postCreateCommand": "pip install -r backend/requirements.txt ; npm --prefix frontend install ; mkdir -p data ; ([ -f .env ] || cp .env.example .env)",
+
+  // Ports automatisch weiterleiten
+  "forwardPorts": [8420, 5173],
+  "portsAttributes": {
+    "8420": { "label": "Backend API" },
+    "5173": { "label": "Frontend", "onAutoForward": "openBrowser" }
+  },
+
+  // Im Devcontainer: API läuft auf localhost, nicht auf 'backend' (Docker-Compose-Name)
+  "remoteEnv": {
+    "VITE_API_TARGET": "http://localhost:8420"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.debugpy",
+        "ms-python.black-formatter",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        },
+        "[javascriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  }
+}
