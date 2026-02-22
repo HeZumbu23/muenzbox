@@ -16,6 +16,60 @@ function Field({ label, value, type = 'text', min, max, onChange }) {
   )
 }
 
+function parsePeriods(val) {
+  if (!val) return [{ von: '08:00', bis: '20:00' }]
+  if (Array.isArray(val)) return val.length ? val : [{ von: '08:00', bis: '20:00' }]
+  try { return JSON.parse(val) } catch { return [{ von: '08:00', bis: '20:00' }] }
+}
+
+function PeriodList({ label, periods, onChange }) {
+  const update = (i, field, val) =>
+    onChange(periods.map((p, idx) => (idx === i ? { ...p, [field]: val } : p)))
+
+  const add = () => onChange([...periods, { von: '08:00', bis: '20:00' }])
+
+  const remove = (i) => onChange(periods.filter((_, idx) => idx !== i))
+
+  return (
+    <div>
+      <p className="text-gray-500 text-xs font-bold mb-2">{label}</p>
+      <div className="flex flex-col gap-2">
+        {periods.map((p, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="time"
+              value={p.von}
+              onChange={(e) => update(i, 'von', e.target.value)}
+              className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+            <span className="text-gray-400 text-sm font-bold">–</span>
+            <input
+              type="time"
+              value={p.bis}
+              onChange={(e) => update(i, 'bis', e.target.value)}
+              className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold flex-1 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+            {periods.length > 1 && (
+              <button
+                onClick={() => remove(i)}
+                className="text-red-400 hover:text-red-300 font-bold text-xl w-8 h-8 flex items-center justify-center"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={add}
+        className="mt-2 text-yellow-400 hover:text-yellow-300 text-xs font-bold"
+      >
+        + Zeitraum hinzufügen
+      </button>
+    </div>
+  )
+}
+
 export default function ChildForm({ child, onSave, onClose }) {
   const isNew = !child
   const [form, setForm] = useState({
@@ -27,10 +81,8 @@ export default function ChildForm({ child, onSave, onClose }) {
     tv_coins: child?.tv_coins ?? 0,
     tv_coins_weekly: child?.tv_coins_weekly ?? 2,
     tv_coins_max: child?.tv_coins_max ?? 10,
-    allowed_from: child?.allowed_from ?? '08:00',
-    allowed_until: child?.allowed_until ?? '20:00',
-    weekend_from: child?.weekend_from ?? '08:00',
-    weekend_until: child?.weekend_until ?? '20:00',
+    allowed_periods: parsePeriods(child?.allowed_periods),
+    weekend_periods: parsePeriods(child?.weekend_periods),
   })
   const [saving, setSaving] = useState(false)
 
@@ -92,15 +144,17 @@ export default function ChildForm({ child, onSave, onClose }) {
 
           <div className="border-t border-gray-700 pt-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">⏰ Erlaubte Zeiten</p>
-            <p className="text-gray-500 text-xs mb-2">Mo – Fr</p>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <Field label="Von" value={form.allowed_from} type="time" onChange={(e) => update('allowed_from', e.target.value)} />
-              <Field label="Bis" value={form.allowed_until} type="time" onChange={(e) => update('allowed_until', e.target.value)} />
-            </div>
-            <p className="text-gray-500 text-xs mb-2">Sa, So & Feiertage</p>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Von" value={form.weekend_from} type="time" onChange={(e) => update('weekend_from', e.target.value)} />
-              <Field label="Bis" value={form.weekend_until} type="time" onChange={(e) => update('weekend_until', e.target.value)} />
+            <div className="flex flex-col gap-4">
+              <PeriodList
+                label="Mo – Fr"
+                periods={form.allowed_periods}
+                onChange={(v) => update('allowed_periods', v)}
+              />
+              <PeriodList
+                label="Sa, So & Feiertage"
+                periods={form.weekend_periods}
+                onChange={(v) => update('weekend_periods', v)}
+              />
             </div>
           </div>
 

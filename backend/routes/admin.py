@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +8,14 @@ from database import get_db
 from auth import hash_pin, create_token, get_current_admin
 from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust
 from adapters import mikrotik_direct, nintendo
+
+_FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
+
+
+def _parse_periods(raw) -> list:
+    if isinstance(raw, list):
+        return raw
+    return json.loads(raw or _FALLBACK)
 
 USE_MOCK = os.getenv("USE_MOCK_ADAPTERS", "false").lower() == "true"
 
@@ -33,7 +42,13 @@ async def admin_list_children(
 ):
     async with db.execute("SELECT * FROM children ORDER BY name") as cur:
         rows = await cur.fetchall()
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        child = dict(r)
+        child["allowed_periods"] = _parse_periods(child.get("allowed_periods"))
+        child["weekend_periods"] = _parse_periods(child.get("weekend_periods"))
+        result.append(child)
+    return result
 
 
 @router.post("/children", status_code=201)
@@ -43,18 +58,19 @@ async def admin_create_child(
     db: aiosqlite.Connection = Depends(get_db),
 ):
     pin_hash = hash_pin(body.pin)
+    allowed_json = json.dumps([{"von": p.von, "bis": p.bis} for p in body.allowed_periods])
+    weekend_json = json.dumps([{"von": p.von, "bis": p.bis} for p in body.weekend_periods])
     async with db.execute(
         """INSERT INTO children
            (name, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
             tv_coins, tv_coins_weekly, tv_coins_max,
-            allowed_from, allowed_until, weekend_from, weekend_until)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            allowed_periods, weekend_periods)
+           VALUES (?,?,?,?,?,?,?,?,?,?)""",
         (
             body.name, pin_hash,
             body.switch_coins, body.switch_coins_weekly, body.switch_coins_max,
             body.tv_coins, body.tv_coins_weekly, body.tv_coins_max,
-            body.allowed_from, body.allowed_until,
-            body.weekend_from, body.weekend_until,
+            allowed_json, weekend_json,
         ),
     ) as cur:
         child_id = cur.lastrowid
@@ -91,14 +107,10 @@ async def admin_update_child(
         updates["tv_coins_weekly"] = body.tv_coins_weekly
     if body.tv_coins_max is not None:
         updates["tv_coins_max"] = body.tv_coins_max
-    if body.allowed_from is not None:
-        updates["allowed_from"] = body.allowed_from
-    if body.allowed_until is not None:
-        updates["allowed_until"] = body.allowed_until
-    if body.weekend_from is not None:
-        updates["weekend_from"] = body.weekend_from
-    if body.weekend_until is not None:
-        updates["weekend_until"] = body.weekend_until
+    if body.allowed_periods is not None:
+        updates["allowed_periods"] = json.dumps([{"von": p.von, "bis": p.bis} for p in body.allowed_periods])
+    if body.weekend_periods is not None:
+        updates["weekend_periods"] = json.dumps([{"von": p.von, "bis": p.bis} for p in body.weekend_periods])
 
     if updates:
         set_clause = ", ".join(f"{k}=?" for k in updates)

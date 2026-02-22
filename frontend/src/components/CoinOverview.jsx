@@ -172,15 +172,17 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
         )}
 
         {/* Time window info */}
-        {status.is_weekend_or_holiday ? (
-          <p className="text-white/70 text-sm font-bold text-center">
-            🎉 Heute: {status.weekend_from} – {status.weekend_until} Uhr
-          </p>
-        ) : (
-          <p className="text-white/60 text-sm font-bold text-center">
-            Heute: {status.allowed_from} – {status.allowed_until} Uhr
-          </p>
-        )}
+        {(() => {
+          const periods = status.is_weekend_or_holiday
+            ? status.weekend_periods
+            : status.allowed_periods
+          const label = periods.map((p) => `${p.von}–${p.bis} Uhr`).join('  •  ')
+          return (
+            <p className={`text-sm font-bold text-center ${status.is_weekend_or_holiday ? 'text-white/70' : 'text-white/60'}`}>
+              {status.is_weekend_or_holiday ? '🎉 ' : ''}{label}
+            </p>
+          )
+        })()}
 
         <CoinRow
           label="Nintendo Switch"

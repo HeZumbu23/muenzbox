@@ -9,6 +9,11 @@ class ChildPublic(BaseModel):
     tv_coins: int
 
 
+class TimeSlot(BaseModel):
+    von: str  # "HH:MM"
+    bis: str  # "HH:MM"
+
+
 class ChildStatus(BaseModel):
     id: int
     name: str
@@ -18,11 +23,12 @@ class ChildStatus(BaseModel):
     tv_coins: int
     tv_coins_weekly: int
     tv_coins_max: int
-    allowed_from: str
-    allowed_until: str
-    weekend_from: str
-    weekend_until: str
+    allowed_periods: list[TimeSlot]
+    weekend_periods: list[TimeSlot]
     is_weekend_or_holiday: bool = False
+
+
+_DEFAULT_PERIODS = [TimeSlot(von="08:00", bis="20:00")]
 
 
 class ChildCreate(BaseModel):
@@ -34,10 +40,8 @@ class ChildCreate(BaseModel):
     tv_coins: int = 0
     tv_coins_weekly: int = 2
     tv_coins_max: int = 10
-    allowed_from: str = "08:00"
-    allowed_until: str = "20:00"
-    weekend_from: str = "08:00"
-    weekend_until: str = "20:00"
+    allowed_periods: list[TimeSlot] = _DEFAULT_PERIODS
+    weekend_periods: list[TimeSlot] = _DEFAULT_PERIODS
 
 
 class ChildUpdate(BaseModel):
@@ -49,10 +53,8 @@ class ChildUpdate(BaseModel):
     tv_coins: Optional[int] = None
     tv_coins_weekly: Optional[int] = None
     tv_coins_max: Optional[int] = None
-    allowed_from: Optional[str] = None
-    allowed_until: Optional[str] = None
-    weekend_from: Optional[str] = None
-    weekend_until: Optional[str] = None
+    allowed_periods: Optional[list[TimeSlot]] = None
+    weekend_periods: Optional[list[TimeSlot]] = None
 
 
 class PinVerify(BaseModel):
