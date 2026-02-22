@@ -107,7 +107,7 @@ export default function AdminDashboard({ token, onLogout }) {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-gray-800 border-b border-gray-700">
         <h1 className="text-xl font-black">⚙️ Eltern-Bereich</h1>
-        <button onClick={onLogout} className="text-gray-400 hover:text-white text-sm font-bold">
+        <button onClick={onLogout} className="text-gray-400 hover:text-white text-lg font-bold px-4 py-2">
           Abmelden
         </button>
       </div>
