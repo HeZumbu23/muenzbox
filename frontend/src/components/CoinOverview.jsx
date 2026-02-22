@@ -146,7 +146,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
         </div>
         <button
           onClick={onLogout}
-          className="text-white/50 hover:text-white/80 font-bold text-sm transition-colors"
+          className="text-white/50 hover:text-white/80 font-bold text-lg transition-colors px-4 py-2"
         >
           Abmelden
         </button>
