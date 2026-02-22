@@ -27,7 +27,7 @@ async def main():
     print()
     url = input("Kopierte URL hier einfuegen und Enter druecken: ").strip()
 
-    await auth.complete_login(url)
+    await auth.async_complete_login(url)
 
     print()
     print("=== Erfolg! ===")
