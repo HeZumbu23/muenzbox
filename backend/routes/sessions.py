@@ -38,7 +38,7 @@ async def start_session(
     db: aiosqlite.Connection = Depends(get_db),
 ):
     """Start a new session for Switch or TV."""
-    if current["sub"] != body.child_id:
+    if current["sub"] != str(body.child_id):
         raise HTTPException(status_code=403, detail="Kein Zugriff")
 
     if body.type not in ("switch", "tv"):
@@ -143,7 +143,7 @@ async def end_session(
     if not session:
         raise HTTPException(status_code=404, detail="Aktive Session nicht gefunden")
 
-    if session["child_id"] != current["sub"]:
+    if str(session["child_id"]) != current["sub"]:
         raise HTTPException(status_code=403, detail="Kein Zugriff")
 
     await db.execute(
