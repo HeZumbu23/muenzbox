@@ -14,6 +14,7 @@ async def get_db():
 
 
 async def init_db():
+    os.makedirs(os.path.dirname(DATABASE_PATH) or ".", exist_ok=True)
     async with aiosqlite.connect(DATABASE_PATH) as db:
         db.row_factory = aiosqlite.Row
         await db.execute("""
