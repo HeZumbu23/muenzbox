@@ -15,7 +15,6 @@ services:
     image: ghcr.io/hezumbu23/muenzbox-backend:latest
     container_name: muenzbox-backend
     restart: unless-stopped
-    env_file: .env
     environment:
       - DATABASE_PATH=/data/muenzbox.db
     volumes:
