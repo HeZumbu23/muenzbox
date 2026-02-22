@@ -18,8 +18,7 @@
 
   // Im Devcontainer: API läuft auf localhost, nicht auf 'backend' (Docker-Compose-Name)
   "remoteEnv": {
-    "VITE_API_TARGET": "http://localhost:8420",
-    "USE_MOCK_ADAPTERS": "true"
+    "VITE_API_TARGET": "http://localhost:8420"
   },
 
   "customizations": {
