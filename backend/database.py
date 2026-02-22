@@ -31,7 +31,9 @@ async def init_db():
                 allowed_from TEXT DEFAULT '08:00',
                 allowed_until TEXT DEFAULT '20:00',
                 weekend_from TEXT DEFAULT '08:00',
-                weekend_until TEXT DEFAULT '20:00'
+                weekend_until TEXT DEFAULT '20:00',
+                allowed_periods TEXT DEFAULT '[{"von":"08:00","bis":"20:00"}]',
+                weekend_periods TEXT DEFAULT '[{"von":"08:00","bis":"20:00"}]'
             )
         """)
         await db.execute("""
@@ -57,7 +59,7 @@ async def init_db():
                 FOREIGN KEY (child_id) REFERENCES children(id)
             )
         """)
-        # Migrate: weekend time columns for existing databases
+        # Migrate: weekend columns (v1)
         for col, default in [("weekend_from", "08:00"), ("weekend_until", "20:00")]:
             try:
                 await db.execute(
@@ -65,6 +67,33 @@ async def init_db():
                 )
                 await db.commit()
             except Exception:
+                pass
+
+        # Migrate: JSON period columns (v2) – populate from old single-window columns
+        import json as _json
+        for periods_col, from_col, until_col in [
+            ("allowed_periods", "allowed_from", "allowed_until"),
+            ("weekend_periods", "weekend_from", "weekend_until"),
+        ]:
+            col_added = False
+            try:
+                await db.execute(f"ALTER TABLE children ADD COLUMN {periods_col} TEXT")
+                col_added = True
+                await db.commit()
+            except Exception:
                 pass  # Column already exists
+            if col_added:
+                async with db.execute(f"SELECT id, {from_col}, {until_col} FROM children") as cur:
+                    rows = await cur.fetchall()
+                for row in rows:
+                    periods = _json.dumps([{
+                        "von": row[from_col] or "08:00",
+                        "bis": row[until_col] or "20:00",
+                    }])
+                    await db.execute(
+                        f"UPDATE children SET {periods_col}=? WHERE id=?",
+                        (periods, row["id"]),
+                    )
+                await db.commit()
 
         await db.commit()
