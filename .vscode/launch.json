@@ -17,8 +17,7 @@
       "cwd": "${workspaceFolder}/backend",
       "envFile": "${workspaceFolder}/.env",
       "env": {
-        "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db",
-        "USE_MOCK_ADAPTERS": "true"
+        "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db"
       },
       "jinja": true
     },
