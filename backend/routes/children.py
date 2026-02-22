@@ -36,7 +36,7 @@ async def verify_child_pin(
     if not verify_pin(body.pin, child["pin_hash"]):
         raise HTTPException(status_code=401, detail="Falsche PIN")
 
-    token = create_token({"sub": child_id, "role": "child", "name": child["name"]})
+    token = create_token({"sub": str(child_id), "role": "child", "name": child["name"]})
     return {"token": token, "child_id": child_id, "name": child["name"]}
 
 
@@ -47,7 +47,7 @@ async def get_child_status(
     db: aiosqlite.Connection = Depends(get_db),
 ):
     """Get full coin status for a child (requires child token)."""
-    if current["sub"] != child_id:
+    if current["sub"] != str(child_id):
         raise HTTPException(status_code=403, detail="Kein Zugriff")
 
     async with db.execute(
@@ -68,7 +68,7 @@ async def get_active_session(
     db: aiosqlite.Connection = Depends(get_db),
 ):
     """Get the currently active session for a child, if any."""
-    if current["sub"] != child_id:
+    if current["sub"] != str(child_id):
         raise HTTPException(status_code=403, detail="Kein Zugriff")
 
     async with db.execute(

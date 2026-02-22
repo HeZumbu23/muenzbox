@@ -116,8 +116,20 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
 
   if (!status) {
     return (
-      <div className="flex items-center justify-center h-full bg-gradient-to-b from-blue-500 to-purple-600">
-        <p className="text-white text-2xl font-bold animate-pulse">Lädt…</p>
+      <div className="flex flex-col items-center justify-center gap-4 h-full bg-gradient-to-b from-blue-500 to-purple-600">
+        {error ? (
+          <>
+            <p className="text-red-300 text-2xl font-bold">{error}</p>
+            <button
+              onClick={onLogout}
+              className="text-white/70 hover:text-white font-bold text-lg underline"
+            >
+              Zurück
+            </button>
+          </>
+        ) : (
+          <p className="text-white text-2xl font-bold animate-pulse">Lädt…</p>
+        )}
       </div>
     )
   }
