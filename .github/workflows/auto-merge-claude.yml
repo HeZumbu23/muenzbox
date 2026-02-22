@@ -41,11 +41,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: main
+          fetch-depth: 2
 
       - name: Get build info
         run: |
-          MSG=$(git log --no-merges -1 --format="%s")
+          MSG=$(git log --no-merges -1 --format="%s" HEAD)
           echo "COMMIT_MSG=$MSG" >> $GITHUB_ENV
 
       - name: Log in to ghcr.io

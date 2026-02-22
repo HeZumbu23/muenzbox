@@ -124,7 +124,7 @@ export default function App() {
 
       {buildNumber && (
         <div className="fixed bottom-0 left-0 right-0 text-center text-xs text-white/20 py-1 pointer-events-none select-none">
-          v{buildNumber}{commitMsg ? ` · ${commitMsg}` : ''}
+          #{buildNumber}{commitMsg ? ` · ${commitMsg}` : ''}
         </div>
       )}
     </div>
