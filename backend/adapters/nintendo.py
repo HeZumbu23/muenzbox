@@ -2,8 +2,9 @@
 Nintendo Switch Parental Controls Adapter.
 Uses the pynintendoparental library to control daily play time limits.
 
-Session start: Set daily limit to coins * 30 minutes
-Session end:   Set daily limit to 0 (blocks play)
+Session start: add_extra_time(minutes) – wie "Weiter verlängern" in der App,
+               gibt exakt coins*30 Min extra unabhängig von bisheriger Spielzeit
+Session end:   update_max_daily_playtime(0) – setzt Tageslimit auf 0 (sperrt)
 
 Set USE_MOCK_ADAPTERS=true to skip real hardware and use in-memory simulation.
 """
@@ -27,24 +28,23 @@ except ImportError:
     logger.warning("pynintendoparental nicht installiert – Nintendo-Integration deaktiviert")
 
 
-async def _set_playtime(minutes: int) -> bool:
-    """Shared helper: authenticate and set daily playtime limit."""
-    async with aiohttp.ClientSession() as http_session:
-        auth = Authenticator(NINTENDO_TOKEN, http_session)
-        await auth.async_complete_login(use_session_token=True)
-        parental = await NintendoParental.create(
-            auth, timezone=NINTENDO_TZ, lang=NINTENDO_LANG
+async def _get_first_device():
+    """Authenticate and return (http_session, device). Caller must close session."""
+    http_session = aiohttp.ClientSession()
+    auth = Authenticator(NINTENDO_TOKEN, http_session)
+    await auth.async_complete_login(use_session_token=True)
+    parental = await NintendoParental.create(
+        auth, timezone=NINTENDO_TZ, lang=NINTENDO_LANG
+    )
+    devices = parental.devices
+    if not devices:
+        await http_session.close()
+        logger.error(
+            "Nintendo: Keine Geräte gefunden – Token korrekt? "
+            "Gerät in Kindersicherungs-App registriert?"
         )
-        devices = parental.devices
-        if not devices:
-            logger.error(
-                "Nintendo: Keine Geräte gefunden – Token korrekt? "
-                "Gerät in Kindersicherungs-App registriert?"
-            )
-            return False
-        device = list(devices.values())[0]
-        await device.update_max_daily_playtime(minutes)
-        return True
+        return None, None
+    return http_session, list(devices.values())[0]
 
 
 async def switch_freigeben(minutes: int = 30) -> bool:
@@ -60,10 +60,13 @@ async def switch_freigeben(minutes: int = 30) -> bool:
         logger.warning("Nintendo: Library nicht verfügbar")
         return False
     try:
-        ok = await _set_playtime(minutes)
-        if ok:
-            logger.info("Nintendo: Switch freigegeben für %d Minuten", minutes)
-        return ok
+        session, device = await _get_first_device()
+        if device is None:
+            return False
+        async with session:
+            await device.add_extra_time(minutes)
+        logger.info("Nintendo: Switch freigegeben für %d Minuten (extra time)", minutes)
+        return True
     except Exception:
         logger.exception("Nintendo: Fehler beim Freigeben")
         return False
@@ -82,10 +85,13 @@ async def switch_sperren() -> bool:
         logger.warning("Nintendo: Library nicht verfügbar")
         return False
     try:
-        ok = await _set_playtime(0)
-        if ok:
-            logger.info("Nintendo: Switch gesperrt")
-        return ok
+        session, device = await _get_first_device()
+        if device is None:
+            return False
+        async with session:
+            await device.update_max_daily_playtime(0)
+        logger.info("Nintendo: Switch gesperrt")
+        return True
     except Exception:
         logger.exception("Nintendo: Fehler beim Sperren")
         return False
