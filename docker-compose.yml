@@ -1,7 +1,6 @@
 services:
   backend:
-    build: ./backend
-    image: hezumbu23/muenzbox-backend:latest
+    image: mcmdoc120/muenzbox-backend:latest
     container_name: muenzbox-backend
     restart: unless-stopped
     environment:
@@ -22,15 +21,20 @@ services:
     networks:
       - muenzbox
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8420/api/health', timeout=3)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8420/api/health', timeout=3)",
+        ]
       interval: 30s
       timeout: 5s
       start_period: 15s
       retries: 3
 
   frontend:
-    build: ./frontend
-    image: hezumbu23/muenzbox-frontend:latest
+    image: mcmdoc120/muenzbox-frontend:latest
     container_name: muenzbox-frontend
     restart: unless-stopped
     ports:
