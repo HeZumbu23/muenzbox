@@ -64,6 +64,7 @@ class SessionResponse(BaseModel):
     ends_at: str
     coins_used: int
     status: str
+    hardware_ok: bool = True
 
 
 class CoinAdjust(BaseModel):

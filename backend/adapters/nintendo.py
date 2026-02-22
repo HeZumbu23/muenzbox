@@ -40,14 +40,14 @@ async def switch_freigeben(minutes: int = 30) -> bool:
         await parental.update()
         devices = parental.devices
         if not devices:
-            logger.error("Nintendo: Keine Geräte gefunden")
+            logger.error("Nintendo: Keine Geräte gefunden – Token korrekt? Gerät in Kindersicherungs-App registriert?")
             return False
         device = list(devices.values())[0]
         await device.set_max_daily_playtime(minutes)
         logger.info("Nintendo: Switch freigegeben für %d Minuten", minutes)
         return True
-    except Exception as e:
-        logger.error("Nintendo: Fehler beim Freigeben: %s", e)
+    except Exception:
+        logger.exception("Nintendo: Fehler beim Freigeben")
         return False
 
 
@@ -74,6 +74,6 @@ async def switch_sperren() -> bool:
         await device.set_max_daily_playtime(0)
         logger.info("Nintendo: Switch gesperrt")
         return True
-    except Exception as e:
-        logger.error("Nintendo: Fehler beim Sperren: %s", e)
+    except Exception:
+        logger.exception("Nintendo: Fehler beim Sperren")
         return False

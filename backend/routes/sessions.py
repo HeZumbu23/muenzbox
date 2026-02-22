@@ -125,6 +125,7 @@ async def start_session(
         "ends_at": ends_at,
         "coins_used": body.coins,
         "status": "active",
+        "hardware_ok": ok,
     }
 
 
