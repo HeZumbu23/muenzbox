@@ -43,7 +43,7 @@ async def _set_playtime(minutes: int) -> bool:
             )
             return False
         device = list(devices.values())[0]
-        await device.set_max_daily_playtime(minutes)
+        await device.update_max_daily_playtime(minutes)
         return True
 
 
