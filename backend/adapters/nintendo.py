@@ -22,8 +22,10 @@ try:
     import aiohttp
     from pynintendoparental import NintendoParental
     from pynintendoparental.authenticator import Authenticator
+    from pynintendoauth.exceptions import HttpException as NintendoHttpException
     _LIBRARY_AVAILABLE = True
 except ImportError:
+    NintendoHttpException = None
     _LIBRARY_AVAILABLE = False
     logger.warning("pynintendoparental nicht installiert – Nintendo-Integration deaktiviert")
 
@@ -92,6 +94,9 @@ async def switch_sperren() -> bool:
             await device.update_max_daily_playtime(0)
         logger.info("Nintendo: Switch gesperrt")
         return True
-    except Exception:
+    except Exception as e:
+        if NintendoHttpException and isinstance(e, NintendoHttpException) and e.status == 409:
+            logger.warning("Nintendo: Switch bereits gesperrt (409 Conflict) – wird als Erfolg gewertet")
+            return True
         logger.exception("Nintendo: Fehler beim Sperren")
         return False
