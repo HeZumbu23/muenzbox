@@ -47,6 +47,9 @@ async def start_session(
     if body.coins < 1:
         raise HTTPException(status_code=400, detail="Mindestens 1 Münze erforderlich")
 
+    if body.type == "switch" and body.coins > 2:
+        raise HTTPException(status_code=400, detail="Switch: maximal 2 Münzen (60 Min) pro Session")
+
     # Load child data
     async with db.execute("SELECT * FROM children WHERE id=?", (body.child_id,)) as cur:
         child = await cur.fetchone()
