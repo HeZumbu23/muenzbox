@@ -6,6 +6,17 @@ services:
     restart: unless-stopped
     environment:
       - DATABASE_PATH=/data/muenzbox.db
+      - SECRET_KEY=${SECRET_KEY}
+      - ADMIN_PIN=${ADMIN_PIN}
+      - NINTENDO_TOKEN=${NINTENDO_TOKEN}
+      - NINTENDO_TIMEZONE=${NINTENDO_TIMEZONE:-Europe/Berlin}
+      - NINTENDO_LANG=${NINTENDO_LANG:-de-DE}
+      - MIKROTIK_HOST=${MIKROTIK_HOST}
+      - MIKROTIK_USER=${MIKROTIK_USER}
+      - MIKROTIK_PASS=${MIKROTIK_PASS}
+      - MIKROTIK_TV_ADDRESS_LIST_COMMENT=${MIKROTIK_TV_ADDRESS_LIST_COMMENT:-Fernseher}
+      - TV_IP=${TV_IP}
+      - USE_MOCK_ADAPTERS=${USE_MOCK_ADAPTERS:-false}
     volumes:
       - /volume1/docker/muenzbox/data:/data
     networks:
