@@ -172,9 +172,15 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
         )}
 
         {/* Time window info */}
-        <p className="text-white/60 text-sm font-bold text-center">
-          Erlaubte Zeit: {status.allowed_from} – {status.allowed_until} Uhr
-        </p>
+        {status.is_weekend_or_holiday ? (
+          <p className="text-white/70 text-sm font-bold text-center">
+            🎉 Heute: {status.weekend_from} – {status.weekend_until} Uhr
+          </p>
+        ) : (
+          <p className="text-white/60 text-sm font-bold text-center">
+            Heute: {status.allowed_from} – {status.allowed_until} Uhr
+          </p>
+        )}
 
         <CoinRow
           label="Nintendo Switch"

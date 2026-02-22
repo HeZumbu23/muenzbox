@@ -6,6 +6,7 @@ from database import get_db
 from auth import get_current_child
 from models import SessionStart, SessionResponse
 from adapters import mikrotik_direct, nintendo
+from time_utils import active_time_window
 
 router = APIRouter()
 
@@ -21,14 +22,18 @@ def _parse_time(t: str) -> tuple[int, int]:
     return int(h), int(m)
 
 
-def _is_in_time_window(allowed_from: str, allowed_until: str) -> bool:
+def _is_in_time_window(
+    allowed_from: str, allowed_until: str, weekend_from: str, weekend_until: str
+) -> tuple[bool, str, str]:
+    """Returns (allowed, active_from, active_until) based on day type."""
+    from_str, until_str = active_time_window(allowed_from, allowed_until, weekend_from, weekend_until)
     now = datetime.now()
-    fh, fm = _parse_time(allowed_from)
-    uh, um = _parse_time(allowed_until)
+    fh, fm = _parse_time(from_str)
+    uh, um = _parse_time(until_str)
     from_minutes = fh * 60 + fm
     until_minutes = uh * 60 + um
     current_minutes = now.hour * 60 + now.minute
-    return from_minutes <= current_minutes <= until_minutes
+    return from_minutes <= current_minutes <= until_minutes, from_str, until_str
 
 
 @router.post("/sessions", response_model=SessionResponse)
@@ -57,10 +62,14 @@ async def start_session(
         raise HTTPException(status_code=404, detail="Kind nicht gefunden")
 
     # Check time window
-    if not _is_in_time_window(child["allowed_from"], child["allowed_until"]):
+    time_ok, active_from, active_until = _is_in_time_window(
+        child["allowed_from"], child["allowed_until"],
+        child["weekend_from"], child["weekend_until"],
+    )
+    if not time_ok:
         raise HTTPException(
             status_code=403,
-            detail=f"Außerhalb der erlaubten Zeit ({child['allowed_from']} – {child['allowed_until']})",
+            detail=f"Außerhalb der erlaubten Zeit ({active_from} – {active_until} Uhr)",
         )
 
     # Check coin balance

@@ -6,3 +6,4 @@ python-dotenv>=1.0.1
 httpx>=0.28.0
 apscheduler>=3.10.4,<4.0
 pynintendoparental>=2.0.0
+holidays>=0.56
