@@ -4,6 +4,10 @@ WORKDIR /app
 COPY package.json .
 RUN npm install
 COPY . .
+ARG VITE_BUILD_NUMBER=dev
+ARG VITE_COMMIT_MSG=local
+ENV VITE_BUILD_NUMBER=$VITE_BUILD_NUMBER
+ENV VITE_COMMIT_MSG=$VITE_COMMIT_MSG
 RUN npm run build
 
 # Production stage

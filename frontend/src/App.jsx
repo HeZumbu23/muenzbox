@@ -88,6 +88,9 @@ export default function App() {
     setScreen('select')
   }
 
+  const buildNumber = import.meta.env.VITE_BUILD_NUMBER
+  const commitMsg = import.meta.env.VITE_COMMIT_MSG
+
   return (
     <div className="h-screen w-screen overflow-hidden">
       {screen === 'select' && (
@@ -117,6 +120,12 @@ export default function App() {
           token={childToken}
           onEnd={handleSessionEnd}
         />
+      )}
+
+      {buildNumber && (
+        <div className="fixed bottom-0 left-0 right-0 text-center text-xs text-white/20 py-1 pointer-events-none select-none">
+          v{buildNumber}{commitMsg ? ` · ${commitMsg}` : ''}
+        </div>
       )}
     </div>
   )
