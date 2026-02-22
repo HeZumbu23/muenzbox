@@ -11,9 +11,10 @@ services:
     networks:
       - muenzbox
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8420/api/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8420/api/health', timeout=3)"]
       interval: 30s
       timeout: 5s
+      start_period: 15s
       retries: 3
 
   frontend:
