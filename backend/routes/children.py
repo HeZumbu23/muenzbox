@@ -6,6 +6,7 @@ import aiosqlite
 from database import get_db, DATABASE_PATH
 from auth import hash_pin, verify_pin, create_token, get_current_child
 from models import ChildPublic, ChildStatus, PinVerify
+from time_utils import is_weekend_or_holiday
 
 router = APIRouter()
 
@@ -63,7 +64,9 @@ async def get_child_status(
     if not child:
         raise HTTPException(status_code=404, detail="Kind nicht gefunden")
 
-    return dict(child)
+    child_dict = dict(child)
+    child_dict["is_weekend_or_holiday"] = is_weekend_or_holiday()
+    return child_dict
 
 
 @router.get("/children/{child_id}/active-session")

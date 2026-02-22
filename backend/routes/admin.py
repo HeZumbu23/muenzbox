@@ -46,13 +46,15 @@ async def admin_create_child(
     async with db.execute(
         """INSERT INTO children
            (name, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
-            tv_coins, tv_coins_weekly, tv_coins_max, allowed_from, allowed_until)
-           VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            tv_coins, tv_coins_weekly, tv_coins_max,
+            allowed_from, allowed_until, weekend_from, weekend_until)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             body.name, pin_hash,
             body.switch_coins, body.switch_coins_weekly, body.switch_coins_max,
             body.tv_coins, body.tv_coins_weekly, body.tv_coins_max,
             body.allowed_from, body.allowed_until,
+            body.weekend_from, body.weekend_until,
         ),
     ) as cur:
         child_id = cur.lastrowid
@@ -93,6 +95,10 @@ async def admin_update_child(
         updates["allowed_from"] = body.allowed_from
     if body.allowed_until is not None:
         updates["allowed_until"] = body.allowed_until
+    if body.weekend_from is not None:
+        updates["weekend_from"] = body.weekend_from
+    if body.weekend_until is not None:
+        updates["weekend_until"] = body.weekend_until
 
     if updates:
         set_clause = ", ".join(f"{k}=?" for k in updates)

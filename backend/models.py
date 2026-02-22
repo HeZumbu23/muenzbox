@@ -20,6 +20,9 @@ class ChildStatus(BaseModel):
     tv_coins_max: int
     allowed_from: str
     allowed_until: str
+    weekend_from: str
+    weekend_until: str
+    is_weekend_or_holiday: bool = False
 
 
 class ChildCreate(BaseModel):
@@ -33,6 +36,8 @@ class ChildCreate(BaseModel):
     tv_coins_max: int = 10
     allowed_from: str = "08:00"
     allowed_until: str = "20:00"
+    weekend_from: str = "08:00"
+    weekend_until: str = "20:00"
 
 
 class ChildUpdate(BaseModel):
@@ -46,6 +51,8 @@ class ChildUpdate(BaseModel):
     tv_coins_max: Optional[int] = None
     allowed_from: Optional[str] = None
     allowed_until: Optional[str] = None
+    weekend_from: Optional[str] = None
+    weekend_until: Optional[str] = None
 
 
 class PinVerify(BaseModel):

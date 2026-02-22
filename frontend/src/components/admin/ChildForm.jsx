@@ -29,6 +29,8 @@ export default function ChildForm({ child, onSave, onClose }) {
     tv_coins_max: child?.tv_coins_max ?? 10,
     allowed_from: child?.allowed_from ?? '08:00',
     allowed_until: child?.allowed_until ?? '20:00',
+    weekend_from: child?.weekend_from ?? '08:00',
+    weekend_until: child?.weekend_until ?? '20:00',
   })
   const [saving, setSaving] = useState(false)
 
@@ -90,9 +92,15 @@ export default function ChildForm({ child, onSave, onClose }) {
 
           <div className="border-t border-gray-700 pt-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">⏰ Erlaubte Zeiten</p>
-            <div className="grid grid-cols-2 gap-3">
+            <p className="text-gray-500 text-xs mb-2">Mo – Fr</p>
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <Field label="Von" value={form.allowed_from} type="time" onChange={(e) => update('allowed_from', e.target.value)} />
               <Field label="Bis" value={form.allowed_until} type="time" onChange={(e) => update('allowed_until', e.target.value)} />
+            </div>
+            <p className="text-gray-500 text-xs mb-2">Sa, So & Feiertage</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Von" value={form.weekend_from} type="time" onChange={(e) => update('weekend_from', e.target.value)} />
+              <Field label="Bis" value={form.weekend_until} type="time" onChange={(e) => update('weekend_until', e.target.value)} />
             </div>
           </div>
 

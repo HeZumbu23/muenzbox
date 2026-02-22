@@ -29,7 +29,9 @@ async def init_db():
                 tv_coins_weekly INTEGER DEFAULT 2,
                 tv_coins_max INTEGER DEFAULT 10,
                 allowed_from TEXT DEFAULT '08:00',
-                allowed_until TEXT DEFAULT '20:00'
+                allowed_until TEXT DEFAULT '20:00',
+                weekend_from TEXT DEFAULT '08:00',
+                weekend_until TEXT DEFAULT '20:00'
             )
         """)
         await db.execute("""
@@ -55,4 +57,14 @@ async def init_db():
                 FOREIGN KEY (child_id) REFERENCES children(id)
             )
         """)
+        # Migrate: weekend time columns for existing databases
+        for col, default in [("weekend_from", "08:00"), ("weekend_until", "20:00")]:
+            try:
+                await db.execute(
+                    f"ALTER TABLE children ADD COLUMN {col} TEXT DEFAULT '{default}'"
+                )
+                await db.commit()
+            except Exception:
+                pass  # Column already exists
+
         await db.commit()
