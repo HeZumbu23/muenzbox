@@ -41,13 +41,17 @@ export default function ChildSelect({ onSelect }) {
           >
             <span className="text-7xl">{AVATARS[i % AVATARS.length]}</span>
             <span className="text-white text-2xl font-extrabold">{child.name}</span>
+            <div className="flex gap-3 text-white/90 text-sm font-bold">
+              <span>🎮 {child.switch_coins}</span>
+              <span>📺 {child.tv_coins}</span>
+            </div>
           </button>
         ))}
       </div>
 
       <button
         onClick={() => (window.location.href = '/eltern')}
-        className="absolute bottom-6 right-6 text-white/40 hover:text-white/70 text-sm font-bold transition-colors"
+        className="absolute bottom-6 right-6 text-white/70 hover:text-white text-sm font-bold transition-colors bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full"
       >
         Eltern ⚙️
       </button>

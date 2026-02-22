@@ -5,6 +5,8 @@ from typing import Optional
 class ChildPublic(BaseModel):
     id: int
     name: str
+    switch_coins: int
+    tv_coins: int
 
 
 class ChildStatus(BaseModel):
