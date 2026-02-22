@@ -18,7 +18,7 @@ services:
     environment:
       - DATABASE_PATH=/data/muenzbox.db
     volumes:
-      - muenzbox-data:/data
+      - /volume1/docker/muenzbox/data:/data
     networks:
       - muenzbox
     healthcheck:
@@ -43,5 +43,3 @@ networks:
   muenzbox:
     driver: bridge
 
-volumes:
-  muenzbox-data:
