@@ -13,9 +13,14 @@ router = APIRouter()
 @router.get("/children", response_model=list[ChildPublic])
 async def list_children(db: aiosqlite.Connection = Depends(get_db)):
     """List all children (id + name only) for the selection screen."""
-    async with db.execute("SELECT id, name FROM children ORDER BY name") as cursor:
+    async with db.execute(
+        "SELECT id, name, switch_coins, tv_coins FROM children ORDER BY name"
+    ) as cursor:
         rows = await cursor.fetchall()
-    return [{"id": r["id"], "name": r["name"]} for r in rows]
+    return [
+        {"id": r["id"], "name": r["name"], "switch_coins": r["switch_coins"], "tv_coins": r["tv_coins"]}
+        for r in rows
+    ]
 
 
 @router.post("/children/{child_id}/verify-pin")
