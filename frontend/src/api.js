@@ -12,7 +12,9 @@ async function request(path, options = {}) {
   })
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ detail: resp.statusText }))
-    throw new Error(err.detail || 'Fehler')
+    const error = new Error(err.detail || 'Fehler')
+    error.status = resp.status
+    throw error
   }
   if (resp.status === 204) return null
   return resp.json()
