@@ -47,6 +47,11 @@ export default function AdminDashboard({ token, onLogout }) {
   const [editChild, setEditChild] = useState(null) // null | 'new' | child object
   const [coinLogChild, setCoinLogChild] = useState(null)
 
+  const handleError = (e) => {
+    if (e.status === 401) { onLogout(); return }
+    setError(e.message)
+  }
+
   const loadData = async () => {
     setLoading(true)
     setError('')
@@ -59,7 +64,7 @@ export default function AdminDashboard({ token, onLogout }) {
         setCoinLog(await adminGetCoinLog(coinLogChild?.id || null, token))
       }
     } catch (e) {
-      setError(e.message)
+      handleError(e)
     } finally {
       setLoading(false)
     }
@@ -73,6 +78,7 @@ export default function AdminDashboard({ token, onLogout }) {
       await adminCancelSession(id, token)
       setSessions((s) => s.map((x) => x.id === id ? { ...x, status: 'cancelled' } : x))
     } catch (e) {
+      if (e.status === 401) { onLogout(); return }
       alert(e.message)
     }
   }
@@ -83,6 +89,7 @@ export default function AdminDashboard({ token, onLogout }) {
       await adminDeleteChild(id, token)
       setChildren((c) => c.filter((x) => x.id !== id))
     } catch (e) {
+      if (e.status === 401) { onLogout(); return }
       alert(e.message)
     }
   }
@@ -98,6 +105,7 @@ export default function AdminDashboard({ token, onLogout }) {
         )
       )
     } catch (e) {
+      if (e.status === 401) { onLogout(); return }
       alert(e.message)
     }
   }
@@ -166,7 +174,9 @@ export default function AdminDashboard({ token, onLogout }) {
                 </div>
 
                 <p className="text-gray-400 text-xs">
-                  Zeit: {child.allowed_from} – {child.allowed_until} Uhr
+                  Mo–Fr: {child.allowed_periods?.map((p) => `${p.von}–${p.bis}`).join(', ')} Uhr
+                  {' · '}
+                  WE: {child.weekend_periods?.map((p) => `${p.von}–${p.bis}`).join(', ')} Uhr
                 </p>
 
                 {/* Switch coins */}
