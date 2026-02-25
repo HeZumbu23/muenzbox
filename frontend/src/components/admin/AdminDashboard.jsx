@@ -3,10 +3,11 @@ import {
   adminGetChildren, adminGetSessions, adminGetCoinLog,
   adminCancelSession, adminDeleteChild, adminAdjustCoins,
   adminCreateChild, adminUpdateChild, adminGetMockStatus,
-  adminGetDevices
+  adminGetDevices, adminCreateDevice, adminUpdateDevice, adminDeleteDevice
 } from '../../api.js'
 import ChildForm from './ChildForm.jsx'
 import CoinLogView from './CoinLogView.jsx'
+import DeviceForm from './DeviceForm.jsx'
 
 const TABS = ['Kinder', 'Sessions', 'Münz-Log', 'Geräte']
 
@@ -51,6 +52,7 @@ export default function AdminDashboard({ token, onLogout }) {
   const [editChild, setEditChild] = useState(null) // null | 'new' | child object
   const [coinLogChild, setCoinLogChild] = useState(null)
   const [devices, setDevices] = useState([])
+  const [editDevice, setEditDevice] = useState(null) // null | 'new' | device object
 
   const handleError = (e) => {
     if (e.status === 401) { onLogout(); return }
@@ -319,6 +321,12 @@ export default function AdminDashboard({ token, onLogout }) {
         {/* --- Geräte --- */}
         {!loading && tab === 'Geräte' && (
           <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setEditDevice('new')}
+              className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-extrabold rounded-2xl active:scale-95"
+            >
+              + Gerät hinzufügen
+            </button>
             <button onClick={loadData} className="text-gray-400 hover:text-white text-sm font-bold text-right mb-2">
               ↻ Aktualisieren
             </button>
@@ -329,21 +337,42 @@ export default function AdminDashboard({ token, onLogout }) {
               <div key={d.id} className="bg-gray-800 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-base">
-                    {DEVICE_TYPE_LABEL[d.device_type] ?? d.device_type} {d.name}
+                    {DEVICE_TYPE_LABEL[d.device_type] ?? d.device_type} {d.identifier ?? d.name}
                   </span>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                    d.is_active ? 'bg-green-700 text-green-200' : 'bg-gray-700 text-gray-400'
-                  }`}>
-                    {d.is_active ? 'Aktiv' : 'Inaktiv'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      d.is_active ? 'bg-green-700 text-green-200' : 'bg-gray-700 text-gray-400'
+                    }`}>
+                      {d.is_active ? 'Aktiv' : 'Inaktiv'}
+                    </span>
+                    <button
+                      onClick={() => setEditDevice(d)}
+                      className="text-blue-400 hover:text-blue-300 text-sm font-bold"
+                    >
+                      Bearbeiten
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`"${d.identifier ?? d.name}" wirklich löschen?`)) return
+                        try {
+                          await adminDeleteDevice(d.id, token)
+                          setDevices((ds) => ds.filter((x) => x.id !== d.id))
+                        } catch (e) {
+                          if (e.status === 401) { onLogout(); return }
+                          alert(e.message)
+                        }
+                      }}
+                      className="text-red-400 hover:text-red-300 text-sm font-bold"
+                    >
+                      Löschen
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-400">
-                  <span className="text-gray-500">Steuerung</span>
-                  <span className="font-semibold text-gray-200">{CONTROL_TYPE_LABEL[d.control_type] ?? d.control_type}</span>
-                  <span className="text-gray-500">Identifier</span>
+                  <span className="text-gray-500">Fritz!Box Name</span>
                   <span className="font-mono text-yellow-300">{d.identifier ?? '–'}</span>
-                  <span className="text-gray-500">Kind</span>
-                  <span className="font-semibold text-gray-200">{d.child_name ?? 'Geteilt'}</span>
+                  <span className="text-gray-500">Münztyp</span>
+                  <span className="font-semibold text-gray-200">{DEVICE_TYPE_LABEL[d.device_type] ?? d.device_type}</span>
                 </div>
               </div>
             ))}
@@ -370,6 +399,27 @@ export default function AdminDashboard({ token, onLogout }) {
             }
           }}
           onClose={() => setEditChild(null)}
+        />
+      )}
+
+      {/* Device form modal */}
+      {editDevice && (
+        <DeviceForm
+          device={editDevice === 'new' ? null : editDevice}
+          onSave={async (data) => {
+            try {
+              if (editDevice === 'new') {
+                await adminCreateDevice(data, token)
+              } else {
+                await adminUpdateDevice(editDevice.id, data, token)
+              }
+              setEditDevice(null)
+              loadData()
+            } catch (e) {
+              alert(e.message)
+            }
+          }}
+          onClose={() => setEditDevice(null)}
         />
       )}
     </div>

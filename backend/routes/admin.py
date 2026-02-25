@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import aiosqlite
 from database import get_db
 from auth import hash_pin, create_token, get_current_admin
-from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust
+from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust, DeviceCreate, DeviceUpdate
 import adapters
 from adapters import nintendo
 
@@ -231,6 +231,9 @@ async def admin_mock_status(_: dict = Depends(get_current_admin)):
 
 # --- Devices ---
 
+_ALLOWED_DEVICE_TYPES = {"tv"}
+
+
 @router.get("/devices")
 async def admin_list_devices(
     _: dict = Depends(get_current_admin),
@@ -244,6 +247,71 @@ async def admin_list_devices(
     ) as cur:
         rows = await cur.fetchall()
     return [dict(r) for r in rows]
+
+
+@router.post("/devices", status_code=201)
+async def admin_create_device(
+    body: DeviceCreate,
+    _: dict = Depends(get_current_admin),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    if body.device_type not in _ALLOWED_DEVICE_TYPES:
+        raise HTTPException(status_code=400, detail=f"Unbekannter Typ: {body.device_type}")
+    async with db.execute(
+        "INSERT INTO devices (name, device_type, control_type, identifier, is_active) VALUES (?,?,?,?,1)",
+        (body.name, body.device_type, "fritzbox", body.name),
+    ) as cur:
+        device_id = cur.lastrowid
+    await db.commit()
+    return {"id": device_id, "name": body.name}
+
+
+@router.put("/devices/{device_id}")
+async def admin_update_device(
+    device_id: int,
+    body: DeviceUpdate,
+    _: dict = Depends(get_current_admin),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    async with db.execute("SELECT * FROM devices WHERE id=?", (device_id,)) as cur:
+        device = await cur.fetchone()
+    if not device:
+        raise HTTPException(status_code=404, detail="Gerät nicht gefunden")
+
+    updates = {}
+    if body.name is not None:
+        updates["name"] = body.name
+        updates["identifier"] = body.name  # Fritz!Box Netzwerkname = Identifier
+    if body.device_type is not None:
+        if body.device_type not in _ALLOWED_DEVICE_TYPES:
+            raise HTTPException(status_code=400, detail=f"Unbekannter Typ: {body.device_type}")
+        updates["device_type"] = body.device_type
+    if body.is_active is not None:
+        updates["is_active"] = 1 if body.is_active else 0
+
+    if updates:
+        set_clause = ", ".join(f"{k}=?" for k in updates)
+        await db.execute(
+            f"UPDATE devices SET {set_clause} WHERE id=?",
+            (*updates.values(), device_id),
+        )
+        await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/devices/{device_id}")
+async def admin_delete_device(
+    device_id: int,
+    _: dict = Depends(get_current_admin),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    async with db.execute("SELECT * FROM devices WHERE id=?", (device_id,)) as cur:
+        device = await cur.fetchone()
+    if not device:
+        raise HTTPException(status_code=404, detail="Gerät nicht gefunden")
+    await db.execute("DELETE FROM devices WHERE id=?", (device_id,))
+    await db.commit()
+    return {"ok": True}
 
 
 # --- Coin log ---
