@@ -413,8 +413,8 @@ export default function AdminDashboard({ token, onLogout }) {
               } else {
                 await adminUpdateDevice(editDevice.id, data, token)
               }
+              await loadData()
               setEditDevice(null)
-              loadData()
             } catch (e) {
               alert(e.message)
             }
