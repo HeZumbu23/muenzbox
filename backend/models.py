@@ -89,11 +89,13 @@ class AdminVerify(BaseModel):
 
 
 class DeviceCreate(BaseModel):
-    name: str  # Fritz!Box Netzwerkname (auch als Identifier)
+    name: str        # Anzeigename (z. B. "Wohnzimmer TV")
+    identifier: str  # Fritz!Box Netzwerkname (z. B. "samsung-tv")
     device_type: str = "tv"  # Münztyp: "tv", ...
 
 
 class DeviceUpdate(BaseModel):
     name: Optional[str] = None
+    identifier: Optional[str] = None
     device_type: Optional[str] = None
     is_active: Optional[bool] = None

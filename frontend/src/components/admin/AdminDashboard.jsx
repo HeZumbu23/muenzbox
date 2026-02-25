@@ -337,7 +337,7 @@ export default function AdminDashboard({ token, onLogout }) {
               <div key={d.id} className="bg-gray-800 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="font-extrabold text-base">
-                    {DEVICE_TYPE_LABEL[d.device_type] ?? d.device_type} {d.identifier ?? d.name}
+                    {DEVICE_TYPE_LABEL[d.device_type] ?? d.device_type} {d.name}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs font-bold px-2 py-1 rounded-full ${
@@ -353,7 +353,7 @@ export default function AdminDashboard({ token, onLogout }) {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!confirm(`"${d.identifier ?? d.name}" wirklich löschen?`)) return
+                        if (!confirm(`"${d.name}" wirklich löschen?`)) return
                         try {
                           await adminDeleteDevice(d.id, token)
                           setDevices((ds) => ds.filter((x) => x.id !== d.id))
