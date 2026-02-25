@@ -204,7 +204,12 @@ async def admin_cancel_session(
     await db.commit()
 
     if session["type"] == "tv":
-        await mikrotik_direct.tv_sperren()
+        async with db.execute(
+            "SELECT identifier FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
+        ) as cur:
+            dev = await cur.fetchone()
+        identifier = dev["identifier"] if dev and dev["identifier"] else "Fernseher"
+        await mikrotik_direct.tv_sperren(identifier)
     elif session["type"] == "switch":
         await nintendo.switch_sperren()
 
@@ -220,6 +225,23 @@ async def admin_mock_status(_: dict = Depends(get_current_admin)):
         raise HTTPException(status_code=404, detail="Nur im Mock-Modus verfügbar")
     from adapters.mock import get_mock_status
     return get_mock_status()
+
+
+# --- Devices ---
+
+@router.get("/devices")
+async def admin_list_devices(
+    _: dict = Depends(get_current_admin),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    async with db.execute(
+        """SELECT d.*, c.name as child_name
+           FROM devices d
+           LEFT JOIN children c ON d.child_id = c.id
+           ORDER BY d.device_type, d.name"""
+    ) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
 
 
 # --- Coin log ---
