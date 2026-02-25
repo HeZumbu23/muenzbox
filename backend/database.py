@@ -113,6 +113,29 @@ async def init_db():
         """)
         await db.commit()
 
+        # Migrate devices (v4): ensure identifier column exists
+        try:
+            await db.execute("ALTER TABLE devices ADD COLUMN identifier TEXT")
+            await db.commit()
+        except Exception:
+            pass  # column already exists
+
+        # Migrate devices (v5): ensure name column exists (display name separate from identifier)
+        # If name doesn't exist yet, add it and copy from identifier as fallback
+        col_added = False
+        try:
+            await db.execute("ALTER TABLE devices ADD COLUMN name TEXT")
+            col_added = True
+            await db.commit()
+        except Exception:
+            pass  # column already exists
+        if col_added:
+            # Populate name from identifier for existing rows
+            await db.execute(
+                "UPDATE devices SET name = COALESCE(identifier, 'Gerät') WHERE name IS NULL"
+            )
+            await db.commit()
+
         # Seed TV device if not present
         async with db.execute("SELECT COUNT(*) as n FROM devices WHERE device_type='tv'") as cur:
             row = await cur.fetchone()

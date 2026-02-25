@@ -27,7 +27,8 @@ jobs:
       - name: Get build info
         run: |
           MSG=$(git log --no-merges -1 --format="%s")
-          echo "COMMIT_MSG=$MSG" >> $GITHUB_ENV
+          MSG=$(echo "$MSG" | tr -d '"\\' | cut -c1-60)
+          echo "COMMIT_MSG=${MSG:-update}" >> $GITHUB_ENV
 
       - name: Build and push backend
         uses: docker/build-push-action@v6
