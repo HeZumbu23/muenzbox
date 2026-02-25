@@ -2,12 +2,16 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   adminGetChildren, adminGetSessions, adminGetCoinLog,
   adminCancelSession, adminDeleteChild, adminAdjustCoins,
-  adminCreateChild, adminUpdateChild, adminGetMockStatus
+  adminCreateChild, adminUpdateChild, adminGetMockStatus,
+  adminGetDevices
 } from '../../api.js'
 import ChildForm from './ChildForm.jsx'
 import CoinLogView from './CoinLogView.jsx'
 
-const TABS = ['Kinder', 'Sessions', 'Münz-Log']
+const TABS = ['Kinder', 'Sessions', 'Münz-Log', 'Geräte']
+
+const DEVICE_TYPE_LABEL = { tv: '📺 TV', homepod: '🔊 HomePod', switch: '🎮 Switch' }
+const CONTROL_TYPE_LABEL = { mikrotik: 'MikroTik', nintendo: 'Nintendo', schedule_only: 'Nur Zeitplan', none: '–' }
 
 function MockStatusBar({ token }) {
   const [status, setStatus] = useState(null)
@@ -46,6 +50,7 @@ export default function AdminDashboard({ token, onLogout }) {
   const [error, setError] = useState('')
   const [editChild, setEditChild] = useState(null) // null | 'new' | child object
   const [coinLogChild, setCoinLogChild] = useState(null)
+  const [devices, setDevices] = useState([])
 
   const handleError = (e) => {
     if (e.status === 401) { onLogout(); return }
@@ -62,6 +67,8 @@ export default function AdminDashboard({ token, onLogout }) {
         setSessions(await adminGetSessions(token))
       } else if (tab === 'Münz-Log') {
         setCoinLog(await adminGetCoinLog(coinLogChild?.id || null, token))
+      } else if (tab === 'Geräte') {
+        setDevices(await adminGetDevices(token))
       }
     } catch (e) {
       handleError(e)
@@ -305,6 +312,39 @@ export default function AdminDashboard({ token, onLogout }) {
                 <span className={`text-xl font-black ${entry.delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {entry.delta > 0 ? '+' : ''}{entry.delta}
                 </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* --- Geräte --- */}
+        {!loading && tab === 'Geräte' && (
+          <div className="flex flex-col gap-3">
+            <button onClick={loadData} className="text-gray-400 hover:text-white text-sm font-bold text-right mb-2">
+              ↻ Aktualisieren
+            </button>
+            {devices.length === 0 && (
+              <p className="text-gray-500 text-center py-8">Keine Geräte</p>
+            )}
+            {devices.map((d) => (
+              <div key={d.id} className="bg-gray-800 rounded-2xl p-4 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-base">
+                    {DEVICE_TYPE_LABEL[d.device_type] ?? d.device_type} {d.name}
+                  </span>
+                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                    d.is_active ? 'bg-green-700 text-green-200' : 'bg-gray-700 text-gray-400'
+                  }`}>
+                    {d.is_active ? 'Aktiv' : 'Inaktiv'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-400">
+                  <span className="text-gray-500">Steuerung</span>
+                  <span className="font-semibold text-gray-200">{CONTROL_TYPE_LABEL[d.control_type] ?? d.control_type}</span>
+                  <span className="text-gray-500">Identifier</span>
+                  <span className="font-mono text-yellow-300">{d.identifier ?? '–'}</span>
+                  <span className="text-gray-500">Kind</span>
+                  <span className="font-semibold text-gray-200">{d.child_name ?? 'Geteilt'}</span>
+                </div>
               </div>
             ))}
           </div>
