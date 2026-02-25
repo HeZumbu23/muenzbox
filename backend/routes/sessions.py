@@ -16,6 +16,14 @@ COIN_MINUTES = 30
 _FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
 
 
+async def _get_tv_identifier(db: aiosqlite.Connection) -> str:
+    async with db.execute(
+        "SELECT identifier FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
+    ) as cur:
+        row = await cur.fetchone()
+    return row["identifier"] if row and row["identifier"] else "Fernseher"
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -103,7 +111,8 @@ async def start_session(
     # Enable hardware
     ok = False
     if body.type == "tv":
-        ok = await mikrotik_direct.tv_freigeben()
+        identifier = await _get_tv_identifier(db)
+        ok = await mikrotik_direct.tv_freigeben(identifier)
     elif body.type == "switch":
         ok = await nintendo.switch_freigeben(minutes=body.coins * COIN_MINUTES)
 
@@ -150,7 +159,8 @@ async def end_session(
 
     # Disable hardware
     if session["type"] == "tv":
-        await mikrotik_direct.tv_sperren()
+        identifier = await _get_tv_identifier(db)
+        await mikrotik_direct.tv_sperren(identifier)
     elif session["type"] == "switch":
         await nintendo.switch_sperren()
 
