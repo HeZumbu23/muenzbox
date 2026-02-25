@@ -10,6 +10,19 @@ import { startSession } from './api.js'
 // Determine mode from URL path
 const IS_ADMIN = window.location.pathname.startsWith('/eltern')
 
+const buildNumber = import.meta.env.VITE_BUILD_NUMBER
+const commitMsg = import.meta.env.VITE_COMMIT_MSG
+
+function VersionFooter() {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none select-none">
+      <span className="bg-white/70 text-gray-900 text-xs font-mono px-2 py-0.5 rounded-full">
+        #{buildNumber ?? 'dev'}{commitMsg ? ` · ${commitMsg}` : ''}
+      </span>
+    </div>
+  )
+}
+
 export default function App() {
   // Admin state
   const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem('adminToken'))
@@ -25,22 +38,28 @@ export default function App() {
   if (IS_ADMIN) {
     if (!adminToken) {
       return (
-        <AdminLogin
-          onSuccess={(token) => {
-            sessionStorage.setItem('adminToken', token)
-            setAdminToken(token)
-          }}
-        />
+        <>
+          <AdminLogin
+            onSuccess={(token) => {
+              sessionStorage.setItem('adminToken', token)
+              setAdminToken(token)
+            }}
+          />
+          <VersionFooter />
+        </>
       )
     }
     return (
-      <AdminDashboard
-        token={adminToken}
-        onLogout={() => {
-          sessionStorage.removeItem('adminToken')
-          setAdminToken(null)
-        }}
-      />
+      <>
+        <AdminDashboard
+          token={adminToken}
+          onLogout={() => {
+            sessionStorage.removeItem('adminToken')
+            setAdminToken(null)
+          }}
+        />
+        <VersionFooter />
+      </>
     )
   }
 
@@ -88,9 +107,6 @@ export default function App() {
     setScreen('select')
   }
 
-  const buildNumber = import.meta.env.VITE_BUILD_NUMBER
-  const commitMsg = import.meta.env.VITE_COMMIT_MSG
-
   return (
     <div className="h-screen w-screen overflow-hidden">
       {screen === 'select' && (
@@ -122,11 +138,7 @@ export default function App() {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none select-none">
-        <span className="bg-white/70 text-gray-900 text-xs font-mono px-2 py-0.5 rounded-full">
-          #{buildNumber ?? 'dev'}{commitMsg ? ` · ${commitMsg}` : ''}
-        </span>
-      </div>
+      <VersionFooter />
     </div>
   )
 }
