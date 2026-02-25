@@ -4,12 +4,20 @@ const DEVICE_TYPE_OPTIONS = [
   { value: 'tv', label: '📺 Fernseher' },
 ]
 
+const CONTROL_TYPE_OPTIONS = [
+  { value: 'fritzbox', label: '🌐 Fritz!Box' },
+  { value: 'mikrotik', label: '⚙️ MikroTik (Legacy)' },
+  { value: 'schedule_only', label: '🕐 Nur Zeitplan (keine Hardware)' },
+  { value: 'none', label: '— Keine Steuerung' },
+]
+
 export default function DeviceForm({ device, onSave, onClose }) {
   const isNew = !device
   const [form, setForm] = useState({
     name: device?.name ?? '',
     identifier: device?.identifier ?? '',
     device_type: device?.device_type ?? 'tv',
+    control_type: device?.control_type ?? 'fritzbox',
   })
   const [saving, setSaving] = useState(false)
 
@@ -64,6 +72,21 @@ export default function DeviceForm({ device, onSave, onClose }) {
             <p className="text-gray-500 text-xs mt-1">
               Hostname des Geräts aus der Fritz!Box Heimnetz-Übersicht
             </p>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+              Steuerung
+            </label>
+            <select
+              value={form.control_type}
+              onChange={(e) => update('control_type', e.target.value)}
+              className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            >
+              {CONTROL_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-1">
