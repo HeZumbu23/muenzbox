@@ -136,6 +136,12 @@ async def init_db():
             )
             await db.commit()
 
+        # Migrate devices (v6): switch legacy mikrotik TV devices to fritzbox
+        await db.execute(
+            "UPDATE devices SET control_type='fritzbox' WHERE control_type='mikrotik' AND device_type='tv'"
+        )
+        await db.commit()
+
         # Seed TV device if not present
         async with db.execute("SELECT COUNT(*) as n FROM devices WHERE device_type='tv'") as cur:
             row = await cur.fetchone()
