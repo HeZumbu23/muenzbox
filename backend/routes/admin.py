@@ -7,7 +7,8 @@ import aiosqlite
 from database import get_db
 from auth import hash_pin, create_token, get_current_admin
 from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust
-from adapters import mikrotik_direct, nintendo
+import adapters
+from adapters import nintendo
 
 _FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
 
@@ -205,11 +206,12 @@ async def admin_cancel_session(
 
     if session["type"] == "tv":
         async with db.execute(
-            "SELECT identifier FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
+            "SELECT identifier, control_type FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
         ) as cur:
             dev = await cur.fetchone()
         identifier = dev["identifier"] if dev and dev["identifier"] else "Fernseher"
-        await mikrotik_direct.tv_sperren(identifier)
+        control_type = dev["control_type"] if dev else "mikrotik"
+        await adapters.tv_sperren(control_type, identifier)
     elif session["type"] == "switch":
         await nintendo.switch_sperren()
 

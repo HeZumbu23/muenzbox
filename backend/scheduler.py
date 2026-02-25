@@ -10,7 +10,8 @@ from apscheduler.triggers.cron import CronTrigger
 
 import aiosqlite
 from database import DATABASE_PATH
-from adapters import mikrotik_direct, nintendo
+import adapters
+from adapters import nintendo
 
 logger = logging.getLogger(__name__)
 _scheduler = AsyncIOScheduler()
@@ -82,11 +83,12 @@ async def expire_sessions():
             # Disable hardware
             if session["type"] == "tv":
                 async with db.execute(
-                    "SELECT identifier FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
+                    "SELECT identifier, control_type FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
                 ) as cur:
                     dev = await cur.fetchone()
                 identifier = dev["identifier"] if dev and dev["identifier"] else "Fernseher"
-                await mikrotik_direct.tv_sperren(identifier)
+                control_type = dev["control_type"] if dev else "mikrotik"
+                await adapters.tv_sperren(control_type, identifier)
             elif session["type"] == "switch":
                 await nintendo.switch_sperren()
 
