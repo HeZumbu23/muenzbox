@@ -7,7 +7,8 @@ import aiosqlite
 from database import get_db
 from auth import get_current_child
 from models import SessionStart, SessionResponse
-from adapters import mikrotik_direct, nintendo
+import adapters
+from adapters import nintendo
 from time_utils import is_in_periods, get_active_periods
 
 router = APIRouter()
@@ -16,12 +17,14 @@ COIN_MINUTES = 30
 _FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
 
 
-async def _get_tv_identifier(db: aiosqlite.Connection) -> str:
+async def _get_tv_device(db: aiosqlite.Connection) -> dict:
     async with db.execute(
-        "SELECT identifier FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
+        "SELECT identifier, control_type FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
     ) as cur:
         row = await cur.fetchone()
-    return row["identifier"] if row and row["identifier"] else "Fernseher"
+    if row:
+        return {"identifier": row["identifier"] or "Fernseher", "control_type": row["control_type"] or "mikrotik"}
+    return {"identifier": "Fernseher", "control_type": "mikrotik"}
 
 
 def _now_iso() -> str:
@@ -111,8 +114,8 @@ async def start_session(
     # Enable hardware
     ok = False
     if body.type == "tv":
-        identifier = await _get_tv_identifier(db)
-        ok = await mikrotik_direct.tv_freigeben(identifier)
+        dev = await _get_tv_device(db)
+        ok = await adapters.tv_freigeben(dev["control_type"], dev["identifier"])
     elif body.type == "switch":
         ok = await nintendo.switch_freigeben(minutes=body.coins * COIN_MINUTES)
 
@@ -159,8 +162,8 @@ async def end_session(
 
     # Disable hardware
     if session["type"] == "tv":
-        identifier = await _get_tv_identifier(db)
-        await mikrotik_direct.tv_sperren(identifier)
+        dev = await _get_tv_device(db)
+        await adapters.tv_sperren(dev["control_type"], dev["identifier"])
     elif session["type"] == "switch":
         await nintendo.switch_sperren()
 
