@@ -259,7 +259,7 @@ async def admin_create_device(
         raise HTTPException(status_code=400, detail=f"Unbekannter Typ: {body.device_type}")
     async with db.execute(
         "INSERT INTO devices (name, device_type, control_type, identifier, is_active) VALUES (?,?,?,?,1)",
-        (body.name, body.device_type, "fritzbox", body.name),
+        (body.name, body.device_type, "fritzbox", body.identifier),
     ) as cur:
         device_id = cur.lastrowid
     await db.commit()
@@ -281,7 +281,8 @@ async def admin_update_device(
     updates = {}
     if body.name is not None:
         updates["name"] = body.name
-        updates["identifier"] = body.name  # Fritz!Box Netzwerkname = Identifier
+    if body.identifier is not None:
+        updates["identifier"] = body.identifier
     if body.device_type is not None:
         if body.device_type not in _ALLOWED_DEVICE_TYPES:
             raise HTTPException(status_code=400, detail=f"Unbekannter Typ: {body.device_type}")

@@ -7,7 +7,8 @@ const DEVICE_TYPE_OPTIONS = [
 export default function DeviceForm({ device, onSave, onClose }) {
   const isNew = !device
   const [form, setForm] = useState({
-    name: device?.identifier ?? device?.name ?? '',
+    name: device?.name ?? '',
+    identifier: device?.identifier ?? '',
     device_type: device?.device_type ?? 'tv',
   })
   const [saving, setSaving] = useState(false)
@@ -15,7 +16,8 @@ export default function DeviceForm({ device, onSave, onClose }) {
   const update = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert('Fritz!Box Netzwerkname erforderlich'); return }
+    if (!form.name.trim()) { alert('Anzeigename erforderlich'); return }
+    if (!form.identifier.trim()) { alert('Fritz!Box Netzwerkname erforderlich'); return }
     setSaving(true)
     try {
       await onSave(form)
@@ -37,17 +39,30 @@ export default function DeviceForm({ device, onSave, onClose }) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">
-              Fritz!Box Netzwerkname
+              Anzeigename
             </label>
             <input
               type="text"
               value={form.name}
               onChange={(e) => update('name', e.target.value)}
+              placeholder="z. B. Wohnzimmer TV"
+              className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+              Fritz!Box Netzwerkname
+            </label>
+            <input
+              type="text"
+              value={form.identifier}
+              onChange={(e) => update('identifier', e.target.value)}
               placeholder="z. B. samsung-tv"
               className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
             />
             <p className="text-gray-500 text-xs mt-1">
-              Hostname/Netzwerkname des Geräts in der Fritz!Box
+              Hostname des Geräts aus der Fritz!Box Heimnetz-Übersicht
             </p>
           </div>
 
