@@ -124,7 +124,7 @@ export default function App() {
 
       <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none select-none">
         <span className="bg-white/70 text-gray-900 text-xs font-mono px-2 py-0.5 rounded-full">
-          {buildNumber ? `#${buildNumber}` : `v${__APP_VERSION__}`}{commitMsg ? ` · ${commitMsg}` : ''}
+          #{buildNumber ?? 'dev'}{commitMsg ? ` · ${commitMsg}` : ''}
         </span>
       </div>
     </div>
