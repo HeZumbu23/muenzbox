@@ -81,7 +81,12 @@ async def expire_sessions():
             )
             # Disable hardware
             if session["type"] == "tv":
-                await mikrotik_direct.tv_sperren()
+                async with db.execute(
+                    "SELECT identifier FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
+                ) as cur:
+                    dev = await cur.fetchone()
+                identifier = dev["identifier"] if dev and dev["identifier"] else "Fernseher"
+                await mikrotik_direct.tv_sperren(identifier)
             elif session["type"] == "switch":
                 await nintendo.switch_sperren()
 

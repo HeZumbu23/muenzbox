@@ -97,3 +97,29 @@ async def init_db():
                 await db.commit()
 
         await db.commit()
+
+        # Devices table (v3)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS devices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                device_type TEXT NOT NULL,
+                control_type TEXT NOT NULL,
+                identifier TEXT,
+                child_id INTEGER,
+                is_active INTEGER DEFAULT 1,
+                FOREIGN KEY (child_id) REFERENCES children(id)
+            )
+        """)
+        await db.commit()
+
+        # Seed TV device if not present
+        async with db.execute("SELECT COUNT(*) as n FROM devices WHERE device_type='tv'") as cur:
+            row = await cur.fetchone()
+        if row["n"] == 0:
+            tv_identifier = os.getenv("MIKROTIK_TV_ADDRESS_LIST_COMMENT", "Fernseher")
+            await db.execute(
+                "INSERT INTO devices (name, device_type, control_type, identifier) VALUES (?,?,?,?)",
+                ("Fernseher", "tv", "mikrotik", tv_identifier),
+            )
+            await db.commit()
