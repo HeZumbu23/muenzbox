@@ -232,6 +232,7 @@ async def admin_mock_status(_: dict = Depends(get_current_admin)):
 # --- Devices ---
 
 _ALLOWED_DEVICE_TYPES = {"tv"}
+_ALLOWED_CONTROL_TYPES = {"fritzbox", "mikrotik", "schedule_only", "none"}
 
 
 @router.get("/devices")
@@ -257,9 +258,11 @@ async def admin_create_device(
 ):
     if body.device_type not in _ALLOWED_DEVICE_TYPES:
         raise HTTPException(status_code=400, detail=f"Unbekannter Typ: {body.device_type}")
+    if body.control_type not in _ALLOWED_CONTROL_TYPES:
+        raise HTTPException(status_code=400, detail=f"Unbekannter Steuertyp: {body.control_type}")
     async with db.execute(
         "INSERT INTO devices (name, device_type, control_type, identifier, is_active) VALUES (?,?,?,?,1)",
-        (body.name, body.device_type, "fritzbox", body.identifier),
+        (body.name, body.device_type, body.control_type, body.identifier),
     ) as cur:
         device_id = cur.lastrowid
     await db.commit()
@@ -287,6 +290,10 @@ async def admin_update_device(
         if body.device_type not in _ALLOWED_DEVICE_TYPES:
             raise HTTPException(status_code=400, detail=f"Unbekannter Typ: {body.device_type}")
         updates["device_type"] = body.device_type
+    if body.control_type is not None:
+        if body.control_type not in _ALLOWED_CONTROL_TYPES:
+            raise HTTPException(status_code=400, detail=f"Unbekannter Steuertyp: {body.control_type}")
+        updates["control_type"] = body.control_type
     if body.is_active is not None:
         updates["is_active"] = 1 if body.is_active else 0
 

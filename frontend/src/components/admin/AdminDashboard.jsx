@@ -12,7 +12,7 @@ import DeviceForm from './DeviceForm.jsx'
 const TABS = ['Kinder', 'Sessions', 'Münz-Log', 'Geräte']
 
 const DEVICE_TYPE_LABEL = { tv: '📺 TV', homepod: '🔊 HomePod', switch: '🎮 Switch' }
-const CONTROL_TYPE_LABEL = { mikrotik: 'MikroTik', nintendo: 'Nintendo', schedule_only: 'Nur Zeitplan', none: '–' }
+const CONTROL_TYPE_LABEL = { fritzbox: '🌐 Fritz!Box', mikrotik: '⚙️ MikroTik', nintendo: 'Nintendo', schedule_only: 'Nur Zeitplan', none: '–' }
 
 function MockStatusBar({ token }) {
   const [status, setStatus] = useState(null)
@@ -369,8 +369,10 @@ export default function AdminDashboard({ token, onLogout }) {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-400">
-                  <span className="text-gray-500">Fritz!Box Name</span>
+                  <span className="text-gray-500">Netzwerkname</span>
                   <span className="font-mono text-yellow-300">{d.identifier ?? '–'}</span>
+                  <span className="text-gray-500">Steuerung</span>
+                  <span className="font-semibold text-gray-200">{CONTROL_TYPE_LABEL[d.control_type] ?? d.control_type ?? '–'}</span>
                   <span className="text-gray-500">Münztyp</span>
                   <span className="font-semibold text-gray-200">{DEVICE_TYPE_LABEL[d.device_type] ?? d.device_type}</span>
                 </div>
