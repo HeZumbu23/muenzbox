@@ -92,5 +92,14 @@ export const adminGetCoinLog = (childId, token) =>
 export const adminGetDevices = (token) =>
   request('/admin/devices', { token })
 
+export const adminCreateDevice = (data, token) =>
+  request('/admin/devices', { method: 'POST', token, body: JSON.stringify(data) })
+
+export const adminUpdateDevice = (deviceId, data, token) =>
+  request(`/admin/devices/${deviceId}`, { method: 'PUT', token, body: JSON.stringify(data) })
+
+export const adminDeleteDevice = (deviceId, token) =>
+  request(`/admin/devices/${deviceId}`, { method: 'DELETE', token })
+
 export const adminGetMockStatus = (token) =>
   request('/admin/mock-status', { token })

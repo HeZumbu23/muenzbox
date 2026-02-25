@@ -86,3 +86,14 @@ class CoinAdjust(BaseModel):
 
 class AdminVerify(BaseModel):
     pin: str
+
+
+class DeviceCreate(BaseModel):
+    name: str  # Fritz!Box Netzwerkname (auch als Identifier)
+    device_type: str = "tv"  # Münztyp: "tv", ...
+
+
+class DeviceUpdate(BaseModel):
+    name: Optional[str] = None
+    device_type: Optional[str] = None
+    is_active: Optional[bool] = None
