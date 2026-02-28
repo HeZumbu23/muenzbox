@@ -14,6 +14,7 @@ import os
 import httpx
 import logging
 from urllib.parse import urlparse
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,31 @@ def _get_cfg(config: dict) -> tuple[str, str, str]:
     password = (config.get("password") or os.getenv("MIKROTIK_PASS", "")).strip()
     return host, user, password
 
+
+
+
+def _normalized(value: Any) -> str:
+    return str(value or "").strip().casefold()
+
+
+def _find_entry_id(entries: list[dict], identifier: str) -> str | None:
+    """Find best matching address-list entry for identifier."""
+    ident = _normalized(identifier)
+    if not ident:
+        return None
+
+    # 1) exact comment match (trimmed + case-insensitive)
+    for entry in entries:
+        if _normalized(entry.get("comment")) == ident:
+            return entry.get(".id")
+
+    # 2) fallback: contains match in comment (helps with accidental prefixes/suffixes)
+    for entry in entries:
+        comment = _normalized(entry.get("comment"))
+        if comment and (ident in comment or comment in ident):
+            return entry.get(".id")
+
+    return None
 
 def _base_urls(host: str) -> list[str]:
     """Return base URLs for RouterOS REST API.
@@ -57,6 +83,7 @@ async def _get_entry_id(host: str, user: str, password: str, identifier: str) ->
     for base_url in base_urls:
         try:
             async with httpx.AsyncClient(verify=False, timeout=10) as client:
+                # Try server-side filtering first (if supported by RouterOS REST).
                 resp = await client.get(
                     f"{base_url}/rest/ip/firewall/address-list",
                     auth=(user, password),
@@ -64,9 +91,27 @@ async def _get_entry_id(host: str, user: str, password: str, identifier: str) ->
                 )
                 resp.raise_for_status()
                 entries = resp.json()
-                if entries:
-                    _entry_id_cache[cache_key] = entries[0][".id"]
-                    return _entry_id_cache[cache_key]
+                entry_id = _find_entry_id(entries, identifier)
+                if entry_id:
+                    _entry_id_cache[cache_key] = entry_id
+                    return entry_id
+
+                # Fallback: fetch full list and perform local matching.
+                resp_all = await client.get(
+                    f"{base_url}/rest/ip/firewall/address-list",
+                    auth=(user, password),
+                )
+                resp_all.raise_for_status()
+                all_entries = resp_all.json()
+                entry_id = _find_entry_id(all_entries, identifier)
+                if entry_id:
+                    _entry_id_cache[cache_key] = entry_id
+                    return entry_id
+
+                logger.warning(
+                    "MikroTik: Kein Address-List Eintrag mit passendem comment gefunden (identifier=%s)",
+                    identifier,
+                )
                 return None
         except httpx.TransportError as e:
             last_error = e
