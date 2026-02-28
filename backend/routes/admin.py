@@ -224,7 +224,8 @@ async def admin_cancel_session(
 async def admin_mock_status(_: dict = Depends(get_current_admin)):
     """Zeigt den aktuellen simulierten Gerätezustand (nur wenn USE_MOCK_ADAPTERS=true)."""
     if not USE_MOCK:
-        raise HTTPException(status_code=404, detail="Nur im Mock-Modus verfügbar")
+        # Kein 404, damit das Admin-Frontend den Status-Endpunkt gefahrlos pollen kann.
+        return None
     from adapters.mock import get_mock_status
     return get_mock_status()
 
