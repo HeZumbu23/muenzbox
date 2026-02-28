@@ -149,6 +149,6 @@ async def init_db():
             tv_identifier = os.getenv("MIKROTIK_TV_ADDRESS_LIST_COMMENT", "Fernseher")
             await db.execute(
                 "INSERT INTO devices (name, device_type, control_type, identifier) VALUES (?,?,?,?)",
-                ("Fernseher", "tv", "mikrotik", tv_identifier),
+                ("Fernseher", "tv", "fritzbox", tv_identifier),
             )
             await db.commit()

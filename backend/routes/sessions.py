@@ -23,8 +23,8 @@ async def _get_tv_device(db: aiosqlite.Connection) -> dict:
     ) as cur:
         row = await cur.fetchone()
     if row:
-        return {"identifier": row["identifier"] or "Fernseher", "control_type": row["control_type"] or "mikrotik"}
-    return {"identifier": "Fernseher", "control_type": "mikrotik"}
+        return {"identifier": row["identifier"] or "Fernseher", "control_type": row["control_type"] or "fritzbox"}
+    return {"identifier": "Fernseher", "control_type": "fritzbox"}
 
 
 def _now_iso() -> str:
