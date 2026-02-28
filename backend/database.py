@@ -136,12 +136,6 @@ async def init_db():
             )
             await db.commit()
 
-        # Migrate devices (v6): switch legacy mikrotik TV devices to fritzbox
-        await db.execute(
-            "UPDATE devices SET control_type='fritzbox' WHERE control_type='mikrotik' AND device_type='tv'"
-        )
-        await db.commit()
-
         # Migrate devices (v7): add config column for per-device credentials
         try:
             await db.execute("ALTER TABLE devices ADD COLUMN config TEXT DEFAULT '{}'")
