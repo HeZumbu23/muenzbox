@@ -90,9 +90,10 @@ class AdminVerify(BaseModel):
 
 class DeviceCreate(BaseModel):
     name: str        # Anzeigename (z. B. "Wohnzimmer TV")
-    identifier: str  # Fritz!Box Netzwerkname (z. B. "samsung-tv")
-    device_type: str = "tv"      # Münztyp: "tv", ...
+    identifier: str  # Gerätename im Netzwerk (Fritz!Box hostname / MikroTik comment)
+    device_type: str = "tv"         # Münztyp: "tv", ...
     control_type: str = "fritzbox"  # Steuerung: "fritzbox", "mikrotik", ...
+    config: dict = {}               # Verbindungsparameter (host, user, password, ...)
 
 
 class DeviceUpdate(BaseModel):
@@ -100,4 +101,5 @@ class DeviceUpdate(BaseModel):
     identifier: Optional[str] = None
     device_type: Optional[str] = None
     control_type: Optional[str] = None
+    config: Optional[dict] = None
     is_active: Optional[bool] = None

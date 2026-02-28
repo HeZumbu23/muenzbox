@@ -6,10 +6,33 @@ const DEVICE_TYPE_OPTIONS = [
 
 const CONTROL_TYPE_OPTIONS = [
   { value: 'fritzbox', label: '🌐 Fritz!Box' },
-  { value: 'mikrotik', label: '⚙️ MikroTik (Legacy)' },
+  { value: 'mikrotik', label: '⚙️ MikroTik' },
   { value: 'schedule_only', label: '🕐 Nur Zeitplan (keine Hardware)' },
   { value: 'none', label: '— Keine Steuerung' },
 ]
+
+function Field({ label, hint, children }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">{label}</label>
+      {children}
+      {hint && <p className="text-gray-500 text-xs mt-0.5">{hint}</p>}
+    </div>
+  )
+}
+
+function Input({ value, onChange, placeholder, type = 'text' }) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      autoComplete="off"
+      className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
+    />
+  )
+}
 
 export default function DeviceForm({ device, onSave, onClose }) {
   const isNew = !device
@@ -18,14 +41,17 @@ export default function DeviceForm({ device, onSave, onClose }) {
     identifier: device?.identifier ?? '',
     device_type: device?.device_type ?? 'tv',
     control_type: device?.control_type ?? 'fritzbox',
+    config: device?.config ?? {},
   })
   const [saving, setSaving] = useState(false)
 
   const update = (key, val) => setForm((f) => ({ ...f, [key]: val }))
+  const updateCfg = (key, val) => setForm((f) => ({ ...f, config: { ...f.config, [key]: val } }))
+  const cfg = form.config
 
   const handleSave = async () => {
     if (!form.name.trim()) { alert('Anzeigename erforderlich'); return }
-    if (!form.identifier.trim()) { alert('Fritz!Box Netzwerkname erforderlich'); return }
+    if (!form.identifier.trim()) { alert('Netzwerkname des Geräts erforderlich'); return }
     setSaving(true)
     try {
       await onSave(form)
@@ -36,7 +62,7 @@ export default function DeviceForm({ device, onSave, onClose }) {
 
   return (
     <div className="absolute inset-0 bg-black/80 flex items-end justify-center z-50">
-      <div className="bg-gray-900 w-full max-w-lg rounded-t-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-900 w-full max-w-lg rounded-t-3xl p-6 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-white text-xl font-black">
             {isNew ? 'Gerät hinzufügen' : 'Gerät bearbeiten'}
@@ -45,54 +71,13 @@ export default function DeviceForm({ device, onSave, onClose }) {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">
-              Anzeigename
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => update('name', e.target.value)}
-              placeholder="z. B. Wohnzimmer TV"
-              className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            />
-          </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">
-              Fritz!Box Netzwerkname
-            </label>
-            <input
-              type="text"
-              value={form.identifier}
-              onChange={(e) => update('identifier', e.target.value)}
-              placeholder="z. B. samsung-tv"
-              className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            />
-            <p className="text-gray-500 text-xs mt-1">
-              Hostname des Geräts aus der Fritz!Box Heimnetz-Übersicht
-            </p>
-          </div>
+          {/* Allgemein */}
+          <Field label="Anzeigename">
+            <Input value={form.name} onChange={(v) => update('name', v)} placeholder="z. B. Wohnzimmer TV" />
+          </Field>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">
-              Steuerung
-            </label>
-            <select
-              value={form.control_type}
-              onChange={(e) => update('control_type', e.target.value)}
-              className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            >
-              {CONTROL_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider">
-              Münztyp
-            </label>
+          <Field label="Münztyp">
             <select
               value={form.device_type}
               onChange={(e) => update('device_type', e.target.value)}
@@ -102,8 +87,89 @@ export default function DeviceForm({ device, onSave, onClose }) {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+          </Field>
+
+          {/* Steuerung */}
+          <div className="border-t border-gray-700 pt-4">
+            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3">Steuerung</p>
+
+            <Field label="Methode">
+              <select
+                value={form.control_type}
+                onChange={(e) => update('control_type', e.target.value)}
+                className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                {CONTROL_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </Field>
           </div>
 
+          {/* Fritz!Box Konfiguration */}
+          {form.control_type === 'fritzbox' && (
+            <div className="flex flex-col gap-3 bg-gray-800 rounded-2xl p-4">
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">🌐 Fritz!Box Zugangsdaten</p>
+
+              <Field label="Adresse" hint="z. B. fritz.box oder 192.168.178.1">
+                <Input value={cfg.host ?? ''} onChange={(v) => updateCfg('host', v)} placeholder="fritz.box" />
+              </Field>
+
+              <Field label="Benutzer" hint="Leer lassen wenn kein Benutzer konfiguriert">
+                <Input value={cfg.user ?? ''} onChange={(v) => updateCfg('user', v)} placeholder="" />
+              </Field>
+
+              <Field label="Passwort">
+                <Input value={cfg.password ?? ''} onChange={(v) => updateCfg('password', v)} placeholder="••••••••" type="password" />
+              </Field>
+
+              <Field label="Freigabe-Profil" hint="Name des Kindersicherungs-Profils für freigegebene Geräte">
+                <Input value={cfg.allowed_profile ?? ''} onChange={(v) => updateCfg('allowed_profile', v)} placeholder="Standard" />
+              </Field>
+
+              <Field label="Sperr-Profil" hint="Name des Kindersicherungs-Profils für gesperrte Geräte">
+                <Input value={cfg.blocked_profile ?? ''} onChange={(v) => updateCfg('blocked_profile', v)} placeholder="Gesperrt" />
+              </Field>
+
+              <Field label="Gerätename in Fritz!Box" hint="Hostname wie er in der Fritz!Box Heimnetz-Übersicht steht">
+                <Input value={form.identifier} onChange={(v) => update('identifier', v)} placeholder="samsung-tv" />
+              </Field>
+            </div>
+          )}
+
+          {/* MikroTik Konfiguration */}
+          {form.control_type === 'mikrotik' && (
+            <div className="flex flex-col gap-3 bg-gray-800 rounded-2xl p-4">
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">⚙️ MikroTik Zugangsdaten</p>
+
+              <Field label="Router-Adresse" hint="IP-Adresse oder Hostname des MikroTik Routers">
+                <Input value={cfg.host ?? ''} onChange={(v) => updateCfg('host', v)} placeholder="192.168.1.1" />
+              </Field>
+
+              <Field label="Benutzer">
+                <Input value={cfg.user ?? ''} onChange={(v) => updateCfg('user', v)} placeholder="freigabe-api" />
+              </Field>
+
+              <Field label="Passwort">
+                <Input value={cfg.password ?? ''} onChange={(v) => updateCfg('password', v)} placeholder="••••••••" type="password" />
+              </Field>
+
+              <Field label="Address-List Kommentar" hint="comment-Feld des Eintrags in der Firewall Address-List">
+                <Input value={form.identifier} onChange={(v) => update('identifier', v)} placeholder="Fernseher" />
+              </Field>
+            </div>
+          )}
+
+          {/* schedule_only / none: kein weiteres Feld */}
+          {(form.control_type === 'schedule_only' || form.control_type === 'none') && (
+            <div className="flex flex-col gap-3 bg-gray-800 rounded-2xl p-4">
+              <Field label="Gerätename" hint="Interner Name zur Identifikation">
+                <Input value={form.identifier} onChange={(v) => update('identifier', v)} placeholder="mein-geraet" />
+              </Field>
+            </div>
+          )}
+
+          {/* Buttons */}
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
