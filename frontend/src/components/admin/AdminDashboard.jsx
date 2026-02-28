@@ -18,16 +18,7 @@ function MockStatusBar({ token }) {
   const [status, setStatus] = useState(null)
 
   useEffect(() => {
-    let iv = null
-    adminGetMockStatus(token)
-      .then((s) => {
-        setStatus(s)
-        iv = setInterval(() =>
-          adminGetMockStatus(token).then(setStatus).catch(() => setStatus(null)),
-        3000)
-      })
-      .catch(() => setStatus(null)) // Not in mock mode → no polling
-    return () => { if (iv) clearInterval(iv) }
+    adminGetMockStatus(token).then(setStatus).catch(() => setStatus(null))
   }, [token])
 
   if (!status) return null
