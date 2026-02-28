@@ -19,12 +19,16 @@ _FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
 
 async def _get_tv_device(db: aiosqlite.Connection) -> dict:
     async with db.execute(
-        "SELECT identifier, control_type FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
+        "SELECT identifier, control_type, config FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1"
     ) as cur:
         row = await cur.fetchone()
     if row:
-        return {"identifier": row["identifier"] or "Fernseher", "control_type": row["control_type"] or "fritzbox"}
-    return {"identifier": "Fernseher", "control_type": "fritzbox"}
+        return {
+            "identifier": row["identifier"] or "Fernseher",
+            "control_type": row["control_type"] or "fritzbox",
+            "config": json.loads(row["config"] or "{}"),
+        }
+    return {"identifier": "Fernseher", "control_type": "fritzbox", "config": {}}
 
 
 def _now_iso() -> str:
@@ -115,7 +119,7 @@ async def start_session(
     ok = False
     if body.type == "tv":
         dev = await _get_tv_device(db)
-        ok = await adapters.tv_freigeben(dev["control_type"], dev["identifier"])
+        ok = await adapters.tv_freigeben(dev["control_type"], dev["identifier"], dev["config"])
     elif body.type == "switch":
         ok = await nintendo.switch_freigeben(minutes=body.coins * COIN_MINUTES)
 
@@ -163,7 +167,7 @@ async def end_session(
     # Disable hardware
     if session["type"] == "tv":
         dev = await _get_tv_device(db)
-        await adapters.tv_sperren(dev["control_type"], dev["identifier"])
+        await adapters.tv_sperren(dev["control_type"], dev["identifier"], dev["config"])
     elif session["type"] == "switch":
         await nintendo.switch_sperren()
 

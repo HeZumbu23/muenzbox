@@ -142,6 +142,13 @@ async def init_db():
         )
         await db.commit()
 
+        # Migrate devices (v7): add config column for per-device credentials
+        try:
+            await db.execute("ALTER TABLE devices ADD COLUMN config TEXT DEFAULT '{}'")
+            await db.commit()
+        except Exception:
+            pass  # column already exists
+
         # Seed TV device if not present
         async with db.execute("SELECT COUNT(*) as n FROM devices WHERE device_type='tv'") as cur:
             row = await cur.fetchone()

@@ -235,6 +235,16 @@ _ALLOWED_DEVICE_TYPES = {"tv"}
 _ALLOWED_CONTROL_TYPES = {"fritzbox", "mikrotik", "schedule_only", "none"}
 
 
+def _mask_config(cfg: dict) -> dict:
+    """Return config with password replaced by *** for display."""
+    if not cfg:
+        return cfg
+    masked = dict(cfg)
+    if masked.get("password"):
+        masked["password"] = "***"
+    return masked
+
+
 @router.get("/devices")
 async def admin_list_devices(
     _: dict = Depends(get_current_admin),
@@ -247,7 +257,13 @@ async def admin_list_devices(
            ORDER BY d.device_type, d.name"""
     ) as cur:
         rows = await cur.fetchall()
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        d = dict(r)
+        cfg = json.loads(d.get("config") or "{}")
+        d["config"] = _mask_config(cfg)
+        result.append(d)
+    return result
 
 
 @router.post("/devices", status_code=201)
@@ -261,8 +277,8 @@ async def admin_create_device(
     if body.control_type not in _ALLOWED_CONTROL_TYPES:
         raise HTTPException(status_code=400, detail=f"Unbekannter Steuertyp: {body.control_type}")
     async with db.execute(
-        "INSERT INTO devices (name, device_type, control_type, identifier, is_active) VALUES (?,?,?,?,1)",
-        (body.name, body.device_type, body.control_type, body.identifier),
+        "INSERT INTO devices (name, device_type, control_type, identifier, config, is_active) VALUES (?,?,?,?,?,1)",
+        (body.name, body.device_type, body.control_type, body.identifier, json.dumps(body.config)),
     ) as cur:
         device_id = cur.lastrowid
     await db.commit()
@@ -294,6 +310,14 @@ async def admin_update_device(
         if body.control_type not in _ALLOWED_CONTROL_TYPES:
             raise HTTPException(status_code=400, detail=f"Unbekannter Steuertyp: {body.control_type}")
         updates["control_type"] = body.control_type
+    if body.config is not None:
+        # Merge with existing config; keep stored password if submitted value is "***"
+        existing_cfg = json.loads(device["config"] or "{}")
+        new_cfg = dict(existing_cfg)
+        new_cfg.update(body.config)
+        if new_cfg.get("password") == "***":
+            new_cfg["password"] = existing_cfg.get("password", "")
+        updates["config"] = json.dumps(new_cfg)
     if body.is_active is not None:
         updates["is_active"] = 1 if body.is_active else 0
 
