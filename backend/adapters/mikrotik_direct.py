@@ -27,9 +27,21 @@ _entry_id_cache: dict[str, str] = {}
 def _get_cfg(config: dict) -> tuple[str, str, str]:
     """Extract connection params from config dict, with env-var fallback."""
     host = (config.get("host") or os.getenv("MIKROTIK_HOST", "")).strip()
-    user = (config.get("user") or os.getenv("MIKROTIK_USER", "")).strip()
+    user = (
+        config.get("user")
+        or config.get("username")
+        or os.getenv("MIKROTIK_USER", "")
+        or os.getenv("MIKROTIK_USERNAME", "")
+    ).strip()
     password = (config.get("password") or os.getenv("MIKROTIK_PASS", "")).strip()
+    if password == "***":
+        # Defensive fallback for accidentally persisted masked values.
+        password = ""
     return host, user, password
+
+
+def _has_credentials(user: str, password: str) -> bool:
+    return bool(user and password)
 
 
 
@@ -134,6 +146,9 @@ async def tv_freigeben(identifier: str, config: dict = {}) -> bool:
     if not host:
         logger.warning("MikroTik: Host nicht konfiguriert")
         return False
+    if not _has_credentials(user, password):
+        logger.warning("MikroTik: Zugangsdaten unvollständig (user/password)")
+        return False
     entry_id = await _get_entry_id(host, user, password, identifier)
     if not entry_id:
         logger.error("MikroTik: TV-Eintrag nicht gefunden (identifier=%s)", identifier)
@@ -168,6 +183,9 @@ async def tv_sperren(identifier: str, config: dict = {}) -> bool:
     if not host:
         logger.warning("MikroTik: Host nicht konfiguriert")
         return False
+    if not _has_credentials(user, password):
+        logger.warning("MikroTik: Zugangsdaten unvollständig (user/password)")
+        return False
     entry_id = await _get_entry_id(host, user, password, identifier)
     if not entry_id:
         logger.error("MikroTik: TV-Eintrag nicht gefunden (identifier=%s)", identifier)
@@ -200,6 +218,9 @@ async def tv_status(identifier: str, config: dict = {}) -> bool:
         return mock_tv_status()
     host, user, password = _get_cfg(config)
     if not host:
+        return False
+    if not _has_credentials(user, password):
+        logger.warning("MikroTik: Zugangsdaten unvollständig (user/password)")
         return False
     entry_id = await _get_entry_id(host, user, password, identifier)
     if not entry_id:
