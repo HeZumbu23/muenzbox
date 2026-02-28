@@ -96,7 +96,13 @@ export default function DeviceForm({ device, onSave, onClose }) {
             <Field label="Methode">
               <select
                 value={form.control_type}
-                onChange={(e) => update('control_type', e.target.value)}
+                onChange={(e) => {
+                  const newType = e.target.value
+                  if (newType !== form.control_type) {
+                    updateCfg('password', '')
+                  }
+                  update('control_type', newType)
+                }}
                 className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
               >
                 {CONTROL_TYPE_OPTIONS.map((opt) => (
