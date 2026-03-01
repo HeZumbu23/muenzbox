@@ -6,7 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 import aiosqlite
 from database import get_db, DATABASE_PATH
 from auth import hash_pin, verify_pin, create_token, get_current_child
-from models import ChildPublic, ChildStatus, PinVerify
+from models import ChildAvatarUpdate, ChildPublic, ChildStatus, PinVerify
 from time_utils import is_weekend_or_holiday
 
 _FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
@@ -94,3 +94,25 @@ async def get_active_session(
     if not session:
         return None
     return dict(session)
+
+
+@router.patch("/children/{child_id}/avatar")
+async def update_child_avatar(
+    child_id: int,
+    body: ChildAvatarUpdate,
+    current: dict = Depends(get_current_child),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """Update avatar for the currently authenticated child."""
+    if current["sub"] != str(child_id):
+        raise HTTPException(status_code=403, detail="Kein Zugriff")
+
+    async with db.execute("SELECT id FROM children WHERE id=?", (child_id,)) as cursor:
+        child = await cursor.fetchone()
+
+    if not child:
+        raise HTTPException(status_code=404, detail="Kind nicht gefunden")
+
+    await db.execute("UPDATE children SET avatar=? WHERE id=?", (body.avatar, child_id))
+    await db.commit()
+    return {"ok": True, "avatar": body.avatar}

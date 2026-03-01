@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getChildStatus, getActiveSession } from '../api.js'
+import { getChildStatus, getActiveSession, updateChildAvatar } from '../api.js'
+
+const AVATARS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵', '🐶', '🐱', '🐰']
 
 function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
   const [showSelect, setShowSelect] = useState(false)
@@ -96,6 +98,8 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
   const [status, setStatus] = useState(null)
   const [activeSession, setActiveSession] = useState(null)
   const [error, setError] = useState('')
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [avatarSaving, setAvatarSaving] = useState(false)
 
   const load = async () => {
     try {
@@ -113,6 +117,21 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
   useEffect(() => {
     load()
   }, [childId, token])
+
+  const handleAvatarChange = async (avatar) => {
+    if (avatarSaving) return
+    setAvatarSaving(true)
+    setError('')
+    try {
+      await updateChildAvatar(childId, avatar, token)
+      setStatus((s) => ({ ...s, avatar }))
+      setShowAvatarPicker(false)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setAvatarSaving(false)
+    }
+  }
 
   if (!status) {
     return (
@@ -142,7 +161,14 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <div>
           <p className="text-white/70 text-sm font-bold uppercase tracking-wider">Hallo</p>
-          <h2 className="text-white text-3xl font-black">{status.name}</h2>
+          <button
+            onClick={() => setShowAvatarPicker(true)}
+            className="flex items-center gap-3 rounded-2xl px-2 py-1 hover:bg-white/10 transition-colors"
+          >
+            <span className="text-4xl">{status.avatar || '🦁'}</span>
+            <span className="text-white text-3xl font-black">{status.name}</span>
+          </button>
+          <p className="text-white/70 text-xs font-bold pl-2">Tippe auf dein Icon zum Wechseln</p>
         </div>
         <button
           onClick={onLogout}
@@ -202,6 +228,30 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
           onStart={(coins) => onSessionStart(null, 'tv', coins)}
         />
       </div>
+
+      {showAvatarPicker && (
+        <div className="absolute inset-0 bg-black/80 flex items-end justify-center z-50">
+          <div className="bg-gray-900 w-full max-w-lg rounded-t-3xl p-6 max-h-[75vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-xl font-black">Wähle dein Icon</h3>
+              <button onClick={() => setShowAvatarPicker(false)} className="text-gray-400 hover:text-white text-2xl font-bold">×</button>
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {AVATARS.map((avatar) => (
+                <button
+                  key={avatar}
+                  type="button"
+                  disabled={avatarSaving}
+                  onClick={() => handleAvatarChange(avatar)}
+                  className={`text-3xl rounded-xl py-2 transition-colors ${status.avatar === avatar ? 'bg-yellow-400/30 ring-2 ring-yellow-400' : 'bg-gray-700 hover:bg-gray-600'} ${avatarSaving ? 'opacity-50' : ''}`}
+                >
+                  {avatar}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

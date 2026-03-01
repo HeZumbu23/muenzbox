@@ -46,6 +46,13 @@ export const startSession = (childId, type, coins, token) =>
 export const endSession = (sessionId, token) =>
   request(`/sessions/${sessionId}/end`, { method: 'POST', token })
 
+export const updateChildAvatar = (childId, avatar, token) =>
+  request(`/children/${childId}/avatar`, {
+    method: 'PATCH',
+    token,
+    body: JSON.stringify({ avatar }),
+  })
+
 // --- Admin ---
 export const adminVerify = (pin) =>
   request('/admin/verify', {

@@ -65,6 +65,10 @@ class PinVerify(BaseModel):
     pin: str
 
 
+class ChildAvatarUpdate(BaseModel):
+    avatar: str
+
+
 class SessionStart(BaseModel):
     child_id: int
     type: str  # "switch" or "tv"
