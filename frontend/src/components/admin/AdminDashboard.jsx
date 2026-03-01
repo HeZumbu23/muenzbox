@@ -1,15 +1,14 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import {
   adminGetChildren, adminGetSessions, adminGetCoinLog,
-  adminCancelSession, adminDeleteChild, adminAdjustCoins,
-  adminCreateChild, adminUpdateChild, adminGetMockStatus,
+  adminCancelSession, adminDeleteChild, adminAdjustCoins, adminAdjustPocketMoney,
+  adminCreateChild, adminUpdateChild, adminGetMockStatus, adminGetPocketMoneyLog,
   adminGetDevices, adminCreateDevice, adminUpdateDevice, adminDeleteDevice
 } from '../../api.js'
 import ChildForm from './ChildForm.jsx'
-import CoinLogView from './CoinLogView.jsx'
 import DeviceForm from './DeviceForm.jsx'
 
-const TABS = ['Kinder', 'Sessions', 'Münz-Log', 'Geräte']
+const TABS = ['Kinder', 'Sessions', 'Münz-Log', 'Taschengeld-Log', 'Geräte']
 
 const DEVICE_TYPE_LABEL = { tv: '📺 TV', homepod: '🔊 HomePod', switch: '🎮 Switch' }
 const CONTROL_TYPE_LABEL = { fritzbox: '🌐 Fritz!Box', mikrotik: '⚙️ MikroTik', nintendo: 'Nintendo', schedule_only: 'Nur Zeitplan', none: '–' }
@@ -41,6 +40,7 @@ export default function AdminDashboard({ token, onLogout }) {
   const [children, setChildren] = useState([])
   const [sessions, setSessions] = useState([])
   const [coinLog, setCoinLog] = useState([])
+  const [pocketMoneyLog, setPocketMoneyLog] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [editChild, setEditChild] = useState(null) // null | 'new' | child object
@@ -63,6 +63,8 @@ export default function AdminDashboard({ token, onLogout }) {
         setSessions(await adminGetSessions(token))
       } else if (tab === 'Münz-Log') {
         setCoinLog(await adminGetCoinLog(coinLogChild?.id || null, token))
+      } else if (tab === 'Taschengeld-Log') {
+        setPocketMoneyLog(await adminGetPocketMoneyLog(coinLogChild?.id || null, token))
       } else if (tab === 'Geräte') {
         setDevices(await adminGetDevices(token))
       }
@@ -104,6 +106,33 @@ export default function AdminDashboard({ token, onLogout }) {
         c.map((x) =>
           x.id === child.id
             ? { ...x, [`${type}_coins`]: Math.max(0, Math.min(x[`${type}_coins`] + delta, x[`${type}_coins_max`])) }
+            : x
+        )
+      )
+    } catch (e) {
+      if (e.status === 401) { onLogout(); return }
+      alert(e.message)
+    }
+  }
+
+  const handlePocketMoneyPayout = async (child) => {
+    const raw = prompt(`Auszahlung für ${child.name} in € (z. B. 5 oder 2.50):`)
+    if (raw === null) return
+
+    const amount = Number(raw.replace(',', '.'))
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Bitte einen Betrag > 0 eingeben.')
+      return
+    }
+
+    const cents = Math.round(amount * 100)
+
+    try {
+      await adminAdjustPocketMoney(child.id, -cents, 'cash_payout', 'Bar ausgezahlt', token)
+      setChildren((c) =>
+        c.map((x) =>
+          x.id === child.id
+            ? { ...x, pocket_money_cents: Math.max(0, x.pocket_money_cents - cents) }
             : x
         )
       )
@@ -206,6 +235,19 @@ export default function AdminDashboard({ token, onLogout }) {
                   <button onClick={() => handleQuickAdjust(child, 'tv', 1)}
                     className="bg-gray-700 hover:bg-gray-600 w-8 h-8 rounded-xl font-bold active:scale-90">+</button>
                   <span className="text-gray-500 text-xs ml-2">+{child.tv_coins_weekly}/Wo</span>
+                </div>
+
+                <div className="flex items-center justify-between bg-gray-700/40 rounded-xl px-3 py-2">
+                  <div>
+                    <p className="text-sm font-bold">💶 Taschengeld: {(child.pocket_money_cents / 100).toFixed(2)} €</p>
+                    <p className="text-xs text-gray-400">Wöchentlich +{(child.pocket_money_weekly_cents / 100).toFixed(2)} € (samstags)</p>
+                  </div>
+                  <button
+                    onClick={() => handlePocketMoneyPayout(child)}
+                    className="text-sm font-bold text-yellow-300 hover:text-yellow-200"
+                  >
+                    Auszahlung erfassen
+                  </button>
                 </div>
 
                 <button
@@ -312,6 +354,52 @@ export default function AdminDashboard({ token, onLogout }) {
             ))}
           </div>
         )}
+
+        {/* --- Taschengeld-Log --- */}
+        {!loading && tab === 'Taschengeld-Log' && (
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setCoinLogChild(null)}
+                className={`px-3 py-1 rounded-full text-sm font-bold ${
+                  !coinLogChild ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 text-gray-300'
+                }`}
+              >
+                Alle
+              </button>
+              {children.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setCoinLogChild(c)}
+                  className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    coinLogChild?.id === c.id ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 text-gray-300'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+            {pocketMoneyLog.length === 0 && (
+              <p className="text-gray-500 text-center py-8">Kein Verlauf</p>
+            )}
+            {pocketMoneyLog.map((entry) => (
+              <div key={entry.id} className="bg-gray-800 rounded-xl p-3 flex justify-between items-center">
+                <div>
+                  <p className="font-bold text-sm">{entry.child_name}</p>
+                  <p className="text-gray-400 text-xs">
+                    {entry.reason === 'weekly_refill' ? 'Wöchentlich aufgeladen' :
+                     entry.reason === 'cash_payout' ? 'Bar ausgezahlt' : 'Anpassung'}
+                  </p>
+                  <p className="text-gray-500 text-xs">{new Date(entry.created_at).toLocaleString('de-DE')}</p>
+                </div>
+                <span className={`text-xl font-black ${entry.delta_cents > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {entry.delta_cents > 0 ? '+' : ''}{(entry.delta_cents / 100).toFixed(2)} €
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* --- Geräte --- */}
         {!loading && tab === 'Geräte' && (
           <div className="flex flex-col gap-3">
