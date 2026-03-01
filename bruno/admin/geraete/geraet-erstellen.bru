@@ -1,0 +1,29 @@
+meta {
+  name: Geraet Erstellen
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/admin/devices
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "name": "Fernseher Wohnzimmer",
+    "device_type": "tv",
+    "control_type": "fritzbox",
+    "identifier": "Fernseher",
+    "config": {
+      "host": "192.168.1.1",
+      "user": "admin",
+      "password": "geheim"
+    }
+  }
+}

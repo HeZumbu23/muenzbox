@@ -1,0 +1,15 @@
+meta {
+  name: Session Abbrechen
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/admin/sessions/{{sessionId}}/cancel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Muenzen Anpassen
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/admin/children/{{childId}}/adjust-coins
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "type": "switch",
+    "delta": 2,
+    "reason": "admin_adjust"
+  }
+}

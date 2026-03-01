@@ -1,0 +1,27 @@
+meta {
+  name: Geraet Aktualisieren
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/admin/devices/{{deviceId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "name": "Fernseher Wohnzimmer",
+    "is_active": true,
+    "config": {
+      "host": "192.168.1.1",
+      "user": "admin",
+      "password": "***"
+    }
+  }
+}

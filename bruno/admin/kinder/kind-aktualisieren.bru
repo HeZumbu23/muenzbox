@@ -1,0 +1,25 @@
+meta {
+  name: Kind Aktualisieren
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/admin/children/{{childId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "name": "Max",
+    "switch_coins_weekly": 4,
+    "tv_coins_weekly": 4,
+    "allowed_periods": [{"von": "09:00", "bis": "20:00"}],
+    "weekend_periods": [{"von": "08:00", "bis": "22:00"}]
+  }
+}

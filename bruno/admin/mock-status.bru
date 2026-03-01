@@ -1,0 +1,15 @@
+meta {
+  name: Mock Status
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/admin/mock-status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}

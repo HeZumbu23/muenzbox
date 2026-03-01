@@ -1,0 +1,15 @@
+meta {
+  name: Alle Geraete
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/admin/devices
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}

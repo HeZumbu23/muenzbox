@@ -1,0 +1,15 @@
+meta {
+  name: Alle Sessions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/admin/sessions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}

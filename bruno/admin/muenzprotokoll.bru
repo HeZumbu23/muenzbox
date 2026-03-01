@@ -1,0 +1,19 @@
+meta {
+  name: Muenzprotokoll
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/admin/coin-log
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+params:query {
+  child_id: {{childId}}
+}
