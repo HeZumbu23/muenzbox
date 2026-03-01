@@ -35,10 +35,11 @@ async def weekly_coin_refill():
                 child["tv_coins"] + child["tv_coins_weekly"],
                 child["tv_coins_max"],
             )
+            new_pocket_money = child["pocket_money_cents"] + child["pocket_money_weekly_cents"]
 
             await db.execute(
-                "UPDATE children SET switch_coins=?, tv_coins=? WHERE id=?",
-                (new_switch, new_tv, child["id"]),
+                "UPDATE children SET switch_coins=?, tv_coins=?, pocket_money_cents=? WHERE id=?",
+                (new_switch, new_tv, new_pocket_money, child["id"]),
             )
 
             switch_delta = new_switch - child["switch_coins"]
@@ -53,6 +54,11 @@ async def weekly_coin_refill():
                 await db.execute(
                     "INSERT INTO coin_log (child_id, type, delta, reason, created_at) VALUES (?,?,?,?,?)",
                     (child["id"], "tv", tv_delta, "weekly_refill", now),
+                )
+            if child["pocket_money_weekly_cents"] > 0:
+                await db.execute(
+                    "INSERT INTO pocket_money_log (child_id, delta_cents, reason, note, created_at) VALUES (?,?,?,?,?)",
+                    (child["id"], child["pocket_money_weekly_cents"], "weekly_refill", None, now),
                 )
 
         await db.commit()

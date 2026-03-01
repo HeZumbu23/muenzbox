@@ -81,6 +81,8 @@ export default function ChildForm({ child, onSave, onClose }) {
     tv_coins: child?.tv_coins ?? 0,
     tv_coins_weekly: child?.tv_coins_weekly ?? 2,
     tv_coins_max: child?.tv_coins_max ?? 10,
+    pocket_money_cents: child?.pocket_money_cents ?? 0,
+    pocket_money_weekly_cents: child?.pocket_money_weekly_cents ?? 0,
     allowed_periods: parsePeriods(child?.allowed_periods),
     weekend_periods: parsePeriods(child?.weekend_periods),
   })
@@ -139,6 +141,27 @@ export default function ChildForm({ child, onSave, onClose }) {
               <Field label="Aktuell" value={form.tv_coins} type="number" min={0} onChange={(e) => update('tv_coins', parseInt(e.target.value) || 0)} />
               <Field label="+/Woche" value={form.tv_coins_weekly} type="number" min={0} onChange={(e) => update('tv_coins_weekly', parseInt(e.target.value) || 0)} />
               <Field label="Maximum" value={form.tv_coins_max} type="number" min={1} onChange={(e) => update('tv_coins_max', parseInt(e.target.value) || 0)} />
+            </div>
+          </div>
+
+
+          <div className="border-t border-gray-700 pt-4">
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">💶 Echtes Taschengeld</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field
+                label="Aktuell (€)"
+                value={(form.pocket_money_cents / 100).toFixed(2)}
+                type="number"
+                min={0}
+                onChange={(e) => update('pocket_money_cents', Math.max(0, Math.round((parseFloat(e.target.value) || 0) * 100)))}
+              />
+              <Field
+                label="+/Woche (€)"
+                value={(form.pocket_money_weekly_cents / 100).toFixed(2)}
+                type="number"
+                min={0}
+                onChange={(e) => update('pocket_money_weekly_cents', Math.max(0, Math.round((parseFloat(e.target.value) || 0) * 100)))}
+              />
             </div>
           </div>
 

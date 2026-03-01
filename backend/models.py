@@ -23,6 +23,8 @@ class ChildStatus(BaseModel):
     tv_coins: int
     tv_coins_weekly: int
     tv_coins_max: int
+    pocket_money_cents: int
+    pocket_money_weekly_cents: int
     allowed_periods: list[TimeSlot]
     weekend_periods: list[TimeSlot]
     is_weekend_or_holiday: bool = False
@@ -40,6 +42,8 @@ class ChildCreate(BaseModel):
     tv_coins: int = 0
     tv_coins_weekly: int = 2
     tv_coins_max: int = 10
+    pocket_money_cents: int = 0
+    pocket_money_weekly_cents: int = 0
     allowed_periods: list[TimeSlot] = _DEFAULT_PERIODS
     weekend_periods: list[TimeSlot] = _DEFAULT_PERIODS
 
@@ -53,6 +57,8 @@ class ChildUpdate(BaseModel):
     tv_coins: Optional[int] = None
     tv_coins_weekly: Optional[int] = None
     tv_coins_max: Optional[int] = None
+    pocket_money_cents: Optional[int] = None
+    pocket_money_weekly_cents: Optional[int] = None
     allowed_periods: Optional[list[TimeSlot]] = None
     weekend_periods: Optional[list[TimeSlot]] = None
 
@@ -82,6 +88,12 @@ class CoinAdjust(BaseModel):
     type: str  # "switch" or "tv"
     delta: int
     reason: str = "admin_adjust"
+
+
+class PocketMoneyAdjust(BaseModel):
+    delta_cents: int
+    reason: str = "admin_adjust"
+    note: Optional[str] = None
 
 
 class AdminVerify(BaseModel):

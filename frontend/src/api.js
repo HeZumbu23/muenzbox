@@ -83,6 +83,16 @@ export const adminAdjustCoins = (childId, type, delta, reason, token) =>
 export const adminGetSessions = (token) =>
   request('/admin/sessions', { token })
 
+export const adminAdjustPocketMoney = (childId, deltaCents, reason, note, token) =>
+  request(`/admin/children/${childId}/adjust-pocket-money`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ delta_cents: deltaCents, reason, note }),
+  })
+
+export const adminGetPocketMoneyLog = (childId, token) =>
+  request(`/admin/pocket-money-log${childId ? `?child_id=${childId}` : ''}`, { token })
+
 export const adminCancelSession = (sessionId, token) =>
   request(`/admin/sessions/${sessionId}/cancel`, { method: 'POST', token })
 

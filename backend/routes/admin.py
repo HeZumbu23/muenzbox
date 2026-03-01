@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import aiosqlite
 from database import get_db
 from auth import hash_pin, create_token, get_current_admin
-from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust, DeviceCreate, DeviceUpdate
+from models import AdminVerify, ChildCreate, ChildUpdate, CoinAdjust, PocketMoneyAdjust, DeviceCreate, DeviceUpdate
 import adapters
 from adapters import nintendo
 
@@ -65,12 +65,14 @@ async def admin_create_child(
         """INSERT INTO children
            (name, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
             tv_coins, tv_coins_weekly, tv_coins_max,
+            pocket_money_cents, pocket_money_weekly_cents,
             allowed_periods, weekend_periods)
-           VALUES (?,?,?,?,?,?,?,?,?,?)""",
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             body.name, pin_hash,
             body.switch_coins, body.switch_coins_weekly, body.switch_coins_max,
             body.tv_coins, body.tv_coins_weekly, body.tv_coins_max,
+            body.pocket_money_cents, body.pocket_money_weekly_cents,
             allowed_json, weekend_json,
         ),
     ) as cur:
@@ -108,6 +110,10 @@ async def admin_update_child(
         updates["tv_coins_weekly"] = body.tv_coins_weekly
     if body.tv_coins_max is not None:
         updates["tv_coins_max"] = body.tv_coins_max
+    if body.pocket_money_cents is not None:
+        updates["pocket_money_cents"] = body.pocket_money_cents
+    if body.pocket_money_weekly_cents is not None:
+        updates["pocket_money_weekly_cents"] = body.pocket_money_weekly_cents
     if body.allowed_periods is not None:
         updates["allowed_periods"] = json.dumps([{"von": p.von, "bis": p.bis} for p in body.allowed_periods])
     if body.weekend_periods is not None:
@@ -133,6 +139,7 @@ async def admin_delete_child(
     await db.execute("DELETE FROM children WHERE id=?", (child_id,))
     await db.execute("DELETE FROM sessions WHERE child_id=?", (child_id,))
     await db.execute("DELETE FROM coin_log WHERE child_id=?", (child_id,))
+    await db.execute("DELETE FROM pocket_money_log WHERE child_id=?", (child_id,))
     await db.commit()
     return {"ok": True}
 
@@ -166,6 +173,32 @@ async def admin_adjust_coins(
     )
     await db.commit()
     return {"ok": True, "new_value": new_val}
+
+
+@router.post("/children/{child_id}/adjust-pocket-money")
+async def admin_adjust_pocket_money(
+    child_id: int,
+    body: PocketMoneyAdjust,
+    _: dict = Depends(get_current_admin),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    async with db.execute("SELECT * FROM children WHERE id=?", (child_id,)) as cur:
+        child = await cur.fetchone()
+    if not child:
+        raise HTTPException(status_code=404, detail="Kind nicht gefunden")
+
+    new_val = max(0, child["pocket_money_cents"] + body.delta_cents)
+    await db.execute(
+        "UPDATE children SET pocket_money_cents=? WHERE id=?",
+        (new_val, child_id),
+    )
+    now = datetime.now(timezone.utc).isoformat()
+    await db.execute(
+        "INSERT INTO pocket_money_log (child_id, delta_cents, reason, note, created_at) VALUES (?,?,?,?,?)",
+        (child_id, body.delta_cents, body.reason, body.note, now),
+    )
+    await db.commit()
+    return {"ok": True, "new_value_cents": new_val}
 
 
 # --- Sessions ---
@@ -345,6 +378,35 @@ async def admin_delete_device(
     await db.execute("DELETE FROM devices WHERE id=?", (device_id,))
     await db.commit()
     return {"ok": True}
+
+
+# --- Pocket money log ---
+
+@router.get("/pocket-money-log")
+async def admin_pocket_money_log(
+    child_id: int | None = None,
+    _: dict = Depends(get_current_admin),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    if child_id:
+        async with db.execute(
+            """SELECT l.*, c.name as child_name
+               FROM pocket_money_log l
+               JOIN children c ON l.child_id = c.id
+               WHERE l.child_id=?
+               ORDER BY l.created_at DESC LIMIT 200""",
+            (child_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+    else:
+        async with db.execute(
+            """SELECT l.*, c.name as child_name
+               FROM pocket_money_log l
+               JOIN children c ON l.child_id = c.id
+               ORDER BY l.created_at DESC LIMIT 200"""
+        ) as cur:
+            rows = await cur.fetchall()
+    return [dict(r) for r in rows]
 
 
 # --- Coin log ---

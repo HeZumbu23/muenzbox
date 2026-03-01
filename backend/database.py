@@ -28,6 +28,8 @@ async def init_db():
                 tv_coins INTEGER DEFAULT 0,
                 tv_coins_weekly INTEGER DEFAULT 2,
                 tv_coins_max INTEGER DEFAULT 10,
+                pocket_money_cents INTEGER DEFAULT 0,
+                pocket_money_weekly_cents INTEGER DEFAULT 0,
                 allowed_from TEXT DEFAULT '08:00',
                 allowed_until TEXT DEFAULT '20:00',
                 weekend_from TEXT DEFAULT '08:00',
@@ -55,6 +57,17 @@ async def init_db():
                 type TEXT NOT NULL,
                 delta INTEGER NOT NULL,
                 reason TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (child_id) REFERENCES children(id)
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS pocket_money_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                child_id INTEGER NOT NULL,
+                delta_cents INTEGER NOT NULL,
+                reason TEXT NOT NULL,
+                note TEXT,
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (child_id) REFERENCES children(id)
             )
@@ -97,6 +110,14 @@ async def init_db():
                 await db.commit()
 
         await db.commit()
+
+        # Migrate: pocket money columns (v8)
+        for col in ("pocket_money_cents", "pocket_money_weekly_cents"):
+            try:
+                await db.execute(f"ALTER TABLE children ADD COLUMN {col} INTEGER DEFAULT 0")
+                await db.commit()
+            except Exception:
+                pass
 
         # Devices table (v3)
         await db.execute("""
