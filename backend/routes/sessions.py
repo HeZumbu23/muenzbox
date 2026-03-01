@@ -89,12 +89,24 @@ async def start_session(
     if existing:
         raise HTTPException(status_code=409, detail="Es läuft bereits eine Session")
 
-    # Deduct coins
     now = _now_iso()
     ends_at = (
         datetime.now(timezone.utc) + timedelta(minutes=body.coins * COIN_MINUTES)
     ).isoformat()
 
+    # Enable hardware first – only deduct coins and create session if it succeeds
+    if body.type == "tv":
+        dev = await _get_tv_device(db)
+        ok = await adapters.tv_freigeben(dev["control_type"], dev["identifier"], dev["config"])
+    elif body.type == "switch":
+        ok = await nintendo.switch_freigeben(minutes=body.coins * COIN_MINUTES)
+    else:
+        ok = True
+
+    if not ok:
+        raise HTTPException(status_code=502, detail="Gerät konnte nicht freigegeben werden")
+
+    # Deduct coins
     await db.execute(
         f"UPDATE children SET {coin_field}={coin_field}-? WHERE id=?",
         (body.coins, body.child_id),
@@ -115,20 +127,6 @@ async def start_session(
 
     await db.commit()
 
-    # Enable hardware
-    ok = False
-    if body.type == "tv":
-        dev = await _get_tv_device(db)
-        ok = await adapters.tv_freigeben(dev["control_type"], dev["identifier"], dev["config"])
-    elif body.type == "switch":
-        ok = await nintendo.switch_freigeben(minutes=body.coins * COIN_MINUTES)
-
-    if not ok:
-        import logging
-        logging.getLogger(__name__).warning(
-            "Hardware-Freigabe fehlgeschlagen für Session %d", session_id
-        )
-
     return {
         "id": session_id,
         "child_id": body.child_id,
@@ -137,7 +135,7 @@ async def start_session(
         "ends_at": ends_at,
         "coins_used": body.coins,
         "status": "active",
-        "hardware_ok": ok,
+        "hardware_ok": True,
     }
 
 
