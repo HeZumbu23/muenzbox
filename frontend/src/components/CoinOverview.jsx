@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getChildStatus, getActiveSession, updateChildAvatar } from '../api.js'
-
-const AVATARS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵', '🐶', '🐱', '🐰']
+import { AVATAR_OPTIONS } from '../constants/avatarOptions.js'
 
 function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
   const [showSelect, setShowSelect] = useState(false)
@@ -237,7 +236,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
               <button onClick={() => setShowAvatarPicker(false)} className="text-gray-400 hover:text-white text-2xl font-bold">×</button>
             </div>
             <div className="grid grid-cols-5 gap-2">
-              {AVATARS.map((avatar) => (
+              {AVATAR_OPTIONS.map((avatar) => (
                 <button
                   key={avatar}
                   type="button"

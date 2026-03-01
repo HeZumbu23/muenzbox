@@ -11,6 +11,7 @@ import adapters
 from adapters import nintendo
 
 _FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
+_ALLOWED_AVATARS = set(['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵', '🐶', '🐱', '🐰'])
 
 
 def _parse_periods(raw) -> list:
@@ -59,6 +60,9 @@ async def admin_create_child(
     _: dict = Depends(get_current_admin),
     db: aiosqlite.Connection = Depends(get_db),
 ):
+    if body.avatar not in _ALLOWED_AVATARS:
+        raise HTTPException(status_code=400, detail="Ungültiges Avatar")
+
     pin_hash = hash_pin(body.pin)
     allowed_json = json.dumps([{"von": p.von, "bis": p.bis} for p in body.allowed_periods])
     weekend_json = json.dumps([{"von": p.von, "bis": p.bis} for p in body.weekend_periods])
@@ -114,6 +118,8 @@ async def admin_update_child(
     if body.weekend_periods is not None:
         updates["weekend_periods"] = json.dumps([{"von": p.von, "bis": p.bis} for p in body.weekend_periods])
     if body.avatar is not None:
+        if body.avatar not in _ALLOWED_AVATARS:
+            raise HTTPException(status_code=400, detail="Ungültiges Avatar")
         updates["avatar"] = body.avatar
 
     if updates:

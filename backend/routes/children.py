@@ -10,6 +10,7 @@ from models import ChildAvatarUpdate, ChildPublic, ChildStatus, PinVerify
 from time_utils import is_weekend_or_holiday
 
 _FALLBACK = '[{"von":"08:00","bis":"20:00"}]'
+_ALLOWED_AVATARS = set(['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵', '🐶', '🐱', '🐰'])
 
 router = APIRouter()
 
@@ -112,6 +113,9 @@ async def update_child_avatar(
 
     if not child:
         raise HTTPException(status_code=404, detail="Kind nicht gefunden")
+
+    if body.avatar not in _ALLOWED_AVATARS:
+        raise HTTPException(status_code=400, detail="Ungültiges Avatar")
 
     await db.execute("UPDATE children SET avatar=? WHERE id=?", (body.avatar, child_id))
     await db.commit()

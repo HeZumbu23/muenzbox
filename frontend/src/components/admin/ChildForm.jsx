@@ -1,7 +1,5 @@
 import { useState } from 'react'
-
-
-const AVATARS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵', '🐶', '🐱', '🐰']
+import { AVATAR_OPTIONS } from '../../constants/avatarOptions.js'
 
 function Field({ label, value, type = 'text', min, max, onChange }) {
   return (
@@ -132,7 +130,7 @@ export default function ChildForm({ child, onSave, onClose }) {
           <div className="border-t border-gray-700 pt-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">🦄 Avatar</p>
             <div className="grid grid-cols-5 gap-2">
-              {AVATARS.map((avatar) => (
+              {AVATAR_OPTIONS.map((avatar) => (
                 <button
                   key={avatar}
                   type="button"
