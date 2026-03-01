@@ -32,6 +32,7 @@ export default function App() {
   const [childToken, setChildToken] = useState(null)
   const [childId, setChildId] = useState(null)
   const [activeSession, setActiveSession] = useState(null)
+  const [sessionError, setSessionError] = useState('')
   const [screen, setScreen] = useState('select') // select | pin | overview | session
 
   // --- Admin mode ---
@@ -79,18 +80,17 @@ export default function App() {
 
   const handleSessionStart = async (existingSession, type, coins) => {
     if (existingSession) {
-      // Show existing active session
       setActiveSession(existingSession)
       setScreen('session')
       return
     }
-    // Start new session
+    setSessionError('')
     try {
       const session = await startSession(childId, type, coins, childToken)
       setActiveSession(session)
       setScreen('session')
     } catch (e) {
-      alert(e.message)
+      setSessionError(e.message)
     }
   }
 
@@ -127,6 +127,7 @@ export default function App() {
           token={childToken}
           onSessionStart={handleSessionStart}
           onLogout={handleLogout}
+          sessionError={sessionError}
         />
       )}
 

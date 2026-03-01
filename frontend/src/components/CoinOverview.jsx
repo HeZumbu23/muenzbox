@@ -92,7 +92,7 @@ function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
   )
 }
 
-export default function CoinOverview({ childId, token, onSessionStart, onLogout }) {
+export default function CoinOverview({ childId, token, onSessionStart, onLogout, sessionError }) {
   const [status, setStatus] = useState(null)
   const [activeSession, setActiveSession] = useState(null)
   const [error, setError] = useState('')
@@ -155,6 +155,9 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
       <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-4">
         {error && (
           <p className="text-red-300 font-bold">{error}</p>
+        )}
+        {sessionError && (
+          <p className="text-red-300 font-extrabold text-center bg-red-900/40 rounded-2xl px-4 py-3">{sessionError}</p>
         )}
 
         {hasActiveSession && (
