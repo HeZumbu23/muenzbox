@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Look for .env next to main.py first, then one level up (project root)
-load_dotenv(Path(__file__).parent / ".env")
-load_dotenv(Path(__file__).parent.parent / ".env")
+# Look for .env next to main.py first, then one level up (project root).
+# override=True ensures .env changes take effect on uvicorn --reload.
+load_dotenv(Path(__file__).parent / ".env", override=True)
+load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 
 from database import init_db
 from routes import children, sessions, admin
