@@ -1,5 +1,11 @@
 services:
   backend:
+    # ASP.NET 9 backend with embedded Python.NET for Nintendo Switch control.
+    # Build locally:  docker compose build backend
+    # Or use a pre-built image by replacing 'build' with 'image: ...'
+    build:
+      context: ./backend-dotnet
+      dockerfile: Dockerfile
     image: mcmdoc120/muenzbox-backend:latest
     container_name: muenzbox-backend
     restart: unless-stopped
@@ -16,6 +22,8 @@ services:
       - MIKROTIK_TV_ADDRESS_LIST_COMMENT=${MIKROTIK_TV_ADDRESS_LIST_COMMENT:-Fernseher}
       - TV_IP=${TV_IP}
       - USE_MOCK_ADAPTERS=${USE_MOCK_ADAPTERS:-false}
+      # Python.NET: path to libpython (set automatically in Dockerfile)
+      - PYTHONNET_PYDLL=${PYTHONNET_PYDLL:-/usr/local/lib/libpython3.12.so.1.0}
     volumes:
       - /volume1/docker/muenzbox/data:/data
     networks:
@@ -24,13 +32,12 @@ services:
       test:
         [
           "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8420/api/health', timeout=3)",
+          "sh", "-c",
+          "curl -sf http://localhost:8420/api/health || exit 1",
         ]
       interval: 30s
       timeout: 5s
-      start_period: 15s
+      start_period: 20s
       retries: 3
 
   frontend:

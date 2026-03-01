@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>MuenzboxApi</AssemblyName>
+    <RootNamespace>MuenzboxApi</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SQLite -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <!-- JWT Authentication -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.3.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.3" />
+    <!-- Python.NET for Nintendo Switch adapter -->
+    <PackageReference Include="pythonnet" Version="3.0.3" />
+  </ItemGroup>
+
+  <!-- Copy Python bridge script to output -->
+  <ItemGroup>
+    <Content Include="Nintendo\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
