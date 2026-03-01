@@ -5,8 +5,9 @@ TV-IP is managed via Address-List "tv-blocked".
 disabled=true  → IP is excluded from the list → TV is UNLOCKED (freigegeben)
 disabled=false → IP is active in the list → TV is BLOCKED (gesperrt)
 
-Credentials werden per config-Dict übergeben (aus der Geräteverwaltung).
-Env-Vars MIKROTIK_* dienen nur noch als Fallback für bestehende Setups.
+Credentials (MIKROTIK_HOST, MIKROTIK_USER, MIKROTIK_PASS) are always read
+from environment variables / .env. The per-device config dict is ignored for
+credentials – it only contains the address-list identifier (comment).
 
 Set USE_MOCK_ADAPTERS=true to skip real hardware and use in-memory simulation.
 """
@@ -25,18 +26,10 @@ _entry_id_cache: dict[str, str] = {}
 
 
 def _get_cfg(config: dict) -> tuple[str, str, str]:
-    """Extract connection params from config dict, with env-var fallback."""
-    host = (config.get("host") or os.getenv("MIKROTIK_HOST", "")).strip()
-    user = (
-        config.get("user")
-        or config.get("username")
-        or os.getenv("MIKROTIK_USER", "")
-        or os.getenv("MIKROTIK_USERNAME", "")
-    ).strip()
-    password = (config.get("password") or os.getenv("MIKROTIK_PASS", "")).strip()
-    if password == "***":
-        # Defensive fallback for accidentally persisted masked values.
-        password = ""
+    """Read connection params from environment variables (.env)."""
+    host = os.getenv("MIKROTIK_HOST", "").strip()
+    user = (os.getenv("MIKROTIK_USER", "") or os.getenv("MIKROTIK_USERNAME", "")).strip()
+    password = os.getenv("MIKROTIK_PASS", "").strip()
     return host, user, password
 
 

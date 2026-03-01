@@ -146,19 +146,8 @@ export default function DeviceForm({ device, onSave, onClose }) {
           {/* MikroTik Konfiguration */}
           {form.control_type === 'mikrotik' && (
             <div className="flex flex-col gap-3 bg-gray-800 rounded-2xl p-4">
-              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">⚙️ MikroTik Zugangsdaten</p>
-
-              <Field label="Router-Adresse" hint="IP-Adresse oder Hostname des MikroTik Routers">
-                <Input value={cfg.host ?? ''} onChange={(v) => updateCfg('host', v)} placeholder="192.168.1.1" />
-              </Field>
-
-              <Field label="Benutzer">
-                <Input value={cfg.user ?? ''} onChange={(v) => updateCfg('user', v)} placeholder="freigabe-api" />
-              </Field>
-
-              <Field label="Passwort">
-                <Input value={cfg.password ?? ''} onChange={(v) => updateCfg('password', v)} placeholder="••••••••" type="password" />
-              </Field>
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">⚙️ MikroTik</p>
+              <p className="text-gray-400 text-xs">Zugangsdaten (Host, Benutzer, Passwort) werden aus der <code>.env</code> geladen: <code>MIKROTIK_HOST</code>, <code>MIKROTIK_USER</code>, <code>MIKROTIK_PASS</code></p>
 
               <Field label="Address-List Kommentar" hint="comment-Feld des Eintrags in der Firewall Address-List">
                 <Input value={form.identifier} onChange={(v) => update('identifier', v)} placeholder="Fernseher" />
