@@ -1,0 +1,16 @@
+meta {
+  name: Address-List alle Eintraege
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{mikrotikUrl}}/rest/ip/firewall/address-list
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{mikrotikUser}}
+  password: {{mikrotikPass}}
+}
