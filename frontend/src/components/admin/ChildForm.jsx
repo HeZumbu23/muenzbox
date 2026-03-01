@@ -1,5 +1,8 @@
 import { useState } from 'react'
 
+
+const AVATARS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵', '🐶', '🐱', '🐰']
+
 function Field({ label, value, type = 'text', min, max, onChange }) {
   return (
     <div className="flex flex-col gap-1">
@@ -83,6 +86,7 @@ export default function ChildForm({ child, onSave, onClose }) {
     tv_coins_max: child?.tv_coins_max ?? 10,
     allowed_periods: parsePeriods(child?.allowed_periods),
     weekend_periods: parsePeriods(child?.weekend_periods),
+    avatar: child?.avatar ?? '🦁',
   })
   const [saving, setSaving] = useState(false)
 
@@ -123,6 +127,23 @@ export default function ChildForm({ child, onSave, onClose }) {
             type="number"
             onChange={(e) => update('pin', e.target.value)}
           />
+
+
+          <div className="border-t border-gray-700 pt-4">
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">🦄 Avatar</p>
+            <div className="grid grid-cols-5 gap-2">
+              {AVATARS.map((avatar) => (
+                <button
+                  key={avatar}
+                  type="button"
+                  onClick={() => update('avatar', avatar)}
+                  className={`text-3xl rounded-xl py-2 transition-colors ${form.avatar === avatar ? 'bg-yellow-400/30 ring-2 ring-yellow-400' : 'bg-gray-700 hover:bg-gray-600'}`}
+                >
+                  {avatar}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="border-t border-gray-700 pt-4">
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3">🎮 Nintendo Switch</p>

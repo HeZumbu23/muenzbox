@@ -18,11 +18,11 @@ router = APIRouter()
 async def list_children(db: aiosqlite.Connection = Depends(get_db)):
     """List all children (id + name only) for the selection screen."""
     async with db.execute(
-        "SELECT id, name, switch_coins, tv_coins FROM children ORDER BY name"
+        "SELECT id, name, avatar, switch_coins, tv_coins FROM children ORDER BY name"
     ) as cursor:
         rows = await cursor.fetchall()
     return [
-        {"id": r["id"], "name": r["name"], "switch_coins": r["switch_coins"], "tv_coins": r["tv_coins"]}
+        {"id": r["id"], "name": r["name"], "avatar": r["avatar"] or "🦁", "switch_coins": r["switch_coins"], "tv_coins": r["tv_coins"]}
         for r in rows
     ]
 
@@ -70,6 +70,7 @@ async def get_child_status(
     child_dict = dict(child)
     child_dict["allowed_periods"] = json.loads(child_dict.get("allowed_periods") or _FALLBACK)
     child_dict["weekend_periods"] = json.loads(child_dict.get("weekend_periods") or _FALLBACK)
+    child_dict["avatar"] = child_dict.get("avatar") or "🦁"
     child_dict["is_weekend_or_holiday"] = is_weekend_or_holiday()
     return child_dict
 

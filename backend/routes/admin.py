@@ -48,6 +48,7 @@ async def admin_list_children(
         child = dict(r)
         child["allowed_periods"] = _parse_periods(child.get("allowed_periods"))
         child["weekend_periods"] = _parse_periods(child.get("weekend_periods"))
+        child["avatar"] = child.get("avatar") or "🦁"
         result.append(child)
     return result
 
@@ -65,13 +66,13 @@ async def admin_create_child(
         """INSERT INTO children
            (name, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
             tv_coins, tv_coins_weekly, tv_coins_max,
-            allowed_periods, weekend_periods)
-           VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            allowed_periods, weekend_periods, avatar)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
         (
             body.name, pin_hash,
             body.switch_coins, body.switch_coins_weekly, body.switch_coins_max,
             body.tv_coins, body.tv_coins_weekly, body.tv_coins_max,
-            allowed_json, weekend_json,
+            allowed_json, weekend_json, body.avatar,
         ),
     ) as cur:
         child_id = cur.lastrowid
@@ -112,6 +113,8 @@ async def admin_update_child(
         updates["allowed_periods"] = json.dumps([{"von": p.von, "bis": p.bis} for p in body.allowed_periods])
     if body.weekend_periods is not None:
         updates["weekend_periods"] = json.dumps([{"von": p.von, "bis": p.bis} for p in body.weekend_periods])
+    if body.avatar is not None:
+        updates["avatar"] = body.avatar
 
     if updates:
         set_clause = ", ".join(f"{k}=?" for k in updates)

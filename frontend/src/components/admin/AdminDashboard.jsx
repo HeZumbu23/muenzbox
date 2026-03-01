@@ -159,7 +159,7 @@ export default function AdminDashboard({ token, onLogout }) {
             {children.map((child) => (
               <div key={child.id} className="bg-gray-800 rounded-2xl p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-extrabold">{child.name}</h3>
+                  <h3 className="text-lg font-extrabold">{child.avatar || "🦁"} {child.name}</h3>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditChild(child)}

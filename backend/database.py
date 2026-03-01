@@ -33,7 +33,8 @@ async def init_db():
                 weekend_from TEXT DEFAULT '08:00',
                 weekend_until TEXT DEFAULT '20:00',
                 allowed_periods TEXT DEFAULT '[{"von":"08:00","bis":"20:00"}]',
-                weekend_periods TEXT DEFAULT '[{"von":"08:00","bis":"20:00"}]'
+                weekend_periods TEXT DEFAULT '[{"von":"08:00","bis":"20:00"}]',
+                avatar TEXT DEFAULT '🦁'
             )
         """)
         await db.execute("""
@@ -95,6 +96,13 @@ async def init_db():
                         (periods, row["id"]),
                     )
                 await db.commit()
+
+        # Migrate children (v8): avatar icon per child
+        try:
+            await db.execute("ALTER TABLE children ADD COLUMN avatar TEXT DEFAULT '🦁'")
+            await db.commit()
+        except Exception:
+            pass  # column already exists
 
         await db.commit()
 

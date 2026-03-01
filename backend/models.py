@@ -5,6 +5,7 @@ from typing import Optional
 class ChildPublic(BaseModel):
     id: int
     name: str
+    avatar: str = "🦁"
     switch_coins: int
     tv_coins: int
 
@@ -25,6 +26,7 @@ class ChildStatus(BaseModel):
     tv_coins_max: int
     allowed_periods: list[TimeSlot]
     weekend_periods: list[TimeSlot]
+    avatar: str = "🦁"
     is_weekend_or_holiday: bool = False
 
 
@@ -42,6 +44,7 @@ class ChildCreate(BaseModel):
     tv_coins_max: int = 10
     allowed_periods: list[TimeSlot] = _DEFAULT_PERIODS
     weekend_periods: list[TimeSlot] = _DEFAULT_PERIODS
+    avatar: str = "🦁"
 
 
 class ChildUpdate(BaseModel):
@@ -55,6 +58,7 @@ class ChildUpdate(BaseModel):
     tv_coins_max: Optional[int] = None
     allowed_periods: Optional[list[TimeSlot]] = None
     weekend_periods: Optional[list[TimeSlot]] = None
+    avatar: Optional[str] = None
 
 
 class PinVerify(BaseModel):

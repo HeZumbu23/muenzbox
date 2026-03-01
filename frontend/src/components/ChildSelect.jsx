@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getChildren } from '../api.js'
 
-const AVATARS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋']
-
 export default function ChildSelect({ onSelect }) {
   const [children, setChildren] = useState([])
   const [error, setError] = useState('')
@@ -32,14 +30,14 @@ export default function ChildSelect({ onSelect }) {
       )}
 
       <div className="grid grid-cols-2 gap-5 w-full max-w-lg">
-        {children.map((child, i) => (
+        {children.map((child) => (
           <button
             key={child.id}
             onClick={() => onSelect(child)}
             className="bg-white/20 hover:bg-white/30 active:scale-95 transition-all duration-150
                        rounded-3xl p-6 flex flex-col items-center gap-3 shadow-xl border-2 border-white/20"
           >
-            <span className="text-7xl">{AVATARS[i % AVATARS.length]}</span>
+            <span className="text-7xl">{child.avatar || '🦁'}</span>
             <span className="text-white text-2xl font-extrabold">{child.name}</span>
             <div className="flex gap-3 text-white/90 text-sm font-bold">
               <span>🎮 {child.switch_coins}</span>
