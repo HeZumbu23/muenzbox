@@ -1,0 +1,15 @@
+meta {
+  name: Session Beenden
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/sessions/{{sessionId}}/end
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{childToken}}
+}

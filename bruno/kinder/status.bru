@@ -1,0 +1,15 @@
+meta {
+  name: Kind Status
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/children/{{childId}}/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{childToken}}
+}

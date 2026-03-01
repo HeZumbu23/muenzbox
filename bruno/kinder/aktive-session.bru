@@ -1,0 +1,15 @@
+meta {
+  name: Aktive Session
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/children/{{childId}}/active-session
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{childToken}}
+}

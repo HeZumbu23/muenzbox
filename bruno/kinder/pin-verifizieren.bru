@@ -1,0 +1,23 @@
+meta {
+  name: PIN Verifizieren
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/children/{{childId}}/verify-pin
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "pin": "1234"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("childToken", res.body.token);
+  }
+}

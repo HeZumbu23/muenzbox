@@ -1,0 +1,26 @@
+meta {
+  name: TV Sperren
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{mikrotikUrl}}/rest/ip/firewall/address-list/{{mikrotikEntryId}}
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{mikrotikUser}}
+  password: {{mikrotikPass}}
+}
+
+body:json {
+  {
+    "disabled": "false"
+  }
+}
+
+docs {
+  disabled=false bedeutet: der Eintrag ist aktiv → IP greift in der Sperrliste → TV gesperrt.
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Kind Loeschen
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/children/{{childId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}

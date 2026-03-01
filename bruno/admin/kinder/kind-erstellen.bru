@@ -1,0 +1,30 @@
+meta {
+  name: Kind Erstellen
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/admin/children
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "name": "Max",
+    "pin": "1234",
+    "switch_coins": 5,
+    "switch_coins_weekly": 3,
+    "switch_coins_max": 10,
+    "tv_coins": 5,
+    "tv_coins_weekly": 3,
+    "tv_coins_max": 10,
+    "allowed_periods": [{"von": "08:00", "bis": "20:00"}],
+    "weekend_periods": [{"von": "08:00", "bis": "21:00"}]
+  }
+}
