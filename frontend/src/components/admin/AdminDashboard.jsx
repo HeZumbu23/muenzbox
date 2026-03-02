@@ -10,7 +10,7 @@ import DeviceForm from './DeviceForm.jsx'
 
 const TABS = ['Kinder', 'Sessions', 'Münz-Log', 'Taschengeld-Log', 'Geräte']
 
-const DEVICE_TYPE_LABEL = { tv: '📺 TV', homepod: '🔊 HomePod', switch: '🎮 Switch' }
+const DEVICE_TYPE_LABEL = { tv: '📺 TV', homepod: '🔊 HomePod', switch: '🎮 Switch', nintendo: '🎮 Nintendo Switch' }
 const CONTROL_TYPE_LABEL = { fritzbox: '🌐 Fritz!Box', mikrotik: '⚙️ MikroTik', nintendo: 'Nintendo', schedule_only: 'Nur Zeitplan', none: '–' }
 
 function MockStatusBar({ token }) {

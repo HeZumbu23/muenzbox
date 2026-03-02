@@ -132,7 +132,7 @@ public class SessionsController : ControllerBase
         }
         else if (body.Type == "switch")
         {
-            var dev = await GetDeviceAsync(conn, "switch", "nintendo", "Nintendo Switch");
+            var dev = await GetNintendoDeviceAsync(conn);
             hardwareOk = await _nintendo.SwitchFreigeben(body.Coins * CoinMinutes, dev.Config);
         }
 
@@ -183,7 +183,7 @@ public class SessionsController : ControllerBase
         }
         else if (type == "switch")
         {
-            var dev = await GetDeviceAsync(conn, "switch", "nintendo", "Nintendo Switch");
+            var dev = await GetNintendoDeviceAsync(conn);
             await _nintendo.SwitchSperren(dev.Config);
         }
 
@@ -240,6 +240,25 @@ public class SessionsController : ControllerBase
     private static Task<(string ControlType, string Identifier, Dictionary<string, string?> Config)>
         GetTvDeviceAsync(Microsoft.Data.Sqlite.SqliteConnection conn) =>
         GetDeviceAsync(conn, "tv", "fritzbox", "Fernseher");
+
+    private static async Task<(string ControlType, string Identifier, Dictionary<string, string?> Config)>
+        GetNintendoDeviceAsync(Microsoft.Data.Sqlite.SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT identifier, control_type, config FROM devices WHERE device_type IN ('nintendo','switch') AND is_active=1 ORDER BY CASE WHEN device_type='nintendo' THEN 0 ELSE 1 END LIMIT 1";
+        await using var r = await cmd.ExecuteReaderAsync();
+        if (await r.ReadAsync())
+        {
+            var identifier = r.IsDBNull(0) ? "Nintendo Switch" : r.GetString(0);
+            var controlType = r.IsDBNull(1) ? "nintendo" : r.GetString(1);
+            var configJson = r.IsDBNull(2) ? "{}" : r.GetString(2);
+            var config = JsonSerializer.Deserialize<Dictionary<string, string?>>(configJson) ?? new();
+            return (controlType, identifier, config);
+        }
+
+        return ("nintendo", "Nintendo Switch", new());
+    }
 
     private static async Task<(string ControlType, string Identifier, Dictionary<string, string?> Config)>
         GetDeviceAsync(Microsoft.Data.Sqlite.SqliteConnection conn, string deviceType, string fallbackControlType, string fallbackIdentifier)

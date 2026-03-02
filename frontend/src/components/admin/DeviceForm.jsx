@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 const DEVICE_TYPE_OPTIONS = [
   { value: 'tv', label: '📺 Fernseher' },
-  { value: 'switch', label: '🎮 Nintendo Switch' },
+  { value: 'nintendo', label: '🎮 Nintendo Switch' },
 ]
 
 const CONTROL_TYPE_OPTIONS = [
@@ -52,7 +52,7 @@ export default function DeviceForm({ device, onSave, onClose }) {
   const cfg = form.config
 
   const controlTypeOptions = CONTROL_TYPE_OPTIONS.filter((opt) => {
-    if (form.device_type === "switch") return ['nintendo', 'schedule_only', 'none'].includes(opt.value)
+    if (form.device_type === "nintendo") return ['nintendo', 'schedule_only', 'none'].includes(opt.value)
     return ['fritzbox', 'mikrotik', 'schedule_only', 'none'].includes(opt.value)
   })
 
@@ -90,7 +90,7 @@ export default function DeviceForm({ device, onSave, onClose }) {
               onChange={(e) => {
                 const newType = e.target.value
                 update('device_type', newType)
-                if (newType === 'switch' && ['fritzbox', 'mikrotik'].includes(form.control_type)) update('control_type', 'nintendo')
+                if (newType === 'nintendo' && ['fritzbox', 'mikrotik'].includes(form.control_type)) update('control_type', 'nintendo')
                 if (newType === 'tv' && form.control_type === 'nintendo') update('control_type', 'fritzbox')
               }}
               className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
