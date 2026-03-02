@@ -3,23 +3,31 @@
   "compounds": [
     {
       "name": "Backend + Frontend",
-      "configurations": ["Backend (uvicorn)", "Frontend (vite)"],
+      "configurations": ["Backend (ASP.NET)", "Frontend (vite)"],
       "stopAll": true
     }
   ],
   "configurations": [
     {
-      "name": "Backend (uvicorn)",
-      "type": "debugpy",
+      "name": "Backend (ASP.NET)",
+      "type": "dotnet",
       "request": "launch",
-      "module": "uvicorn",
-      "args": ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8420"],
-      "cwd": "${workspaceFolder}/backend",
+      "projectPath": "${workspaceFolder}/backend-dotnet/MuenzboxApi/MuenzboxApi.csproj",
+      "preLaunchTask": "dotnet: build",
+      "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/.env",
       "env": {
-        "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db"
+        "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db",
+        // Set to a valid libpython path on your dev machine, e.g.:
+        //   macOS (homebrew):  /opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12/lib/libpython3.12.dylib
+        //   Linux:             /usr/lib/x86_64-linux-gnu/libpython3.12.so.1.0
+        //   Windows:           C:\Python312\python312.dll
+        "PYTHONNET_PYDLL": "",
+        "USE_MOCK_ADAPTERS": "true"
       },
-      "jinja": true
+      "logging": {
+        "moduleLoad": false
+      }
     },
     {
       "name": "Frontend (vite)",

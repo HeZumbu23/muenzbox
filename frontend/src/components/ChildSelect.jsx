@@ -39,7 +39,7 @@ export default function ChildSelect({ onSelect }) {
             className="bg-white/20 hover:bg-white/30 active:scale-95 transition-all duration-150
                        rounded-3xl p-6 flex flex-col items-center gap-3 shadow-xl border-2 border-white/20"
           >
-            <span className="text-7xl">{AVATARS[i % AVATARS.length]}</span>
+            <span className="text-7xl">{child.icon || AVATARS[i % AVATARS.length]}</span>
             <span className="text-white text-2xl font-extrabold">{child.name}</span>
             <div className="flex gap-3 text-white/90 text-sm font-bold">
               <span>🎮 {child.switch_coins}</span>
