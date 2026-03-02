@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace MuenzboxApi.Models;
 
 // ── Public child list entry ────────────────────────────────────────────────
-public record ChildPublic(int Id, string Name, int SwitchCoins, int TvCoins);
+public record ChildPublic(int Id, string Name, int SwitchCoins, int TvCoins, string Icon);
 
 // ── Time slot {"von":"HH:MM","bis":"HH:MM"} ───────────────────────────────
 public record TimeSlot(string Von, string Bis);
@@ -12,6 +12,7 @@ public record TimeSlot(string Von, string Bis);
 public record ChildStatus(
     int Id,
     string Name,
+    string Icon,
     int SwitchCoins,
     int SwitchCoinsWeekly,
     int SwitchCoinsMax,
@@ -29,6 +30,12 @@ public record ChildStatus(
 public class PinVerifyRequest
 {
     public string Pin { get; set; } = "";
+}
+
+
+public class ChildIconUpdateRequest
+{
+    public string Icon { get; set; } = "";
 }
 
 // ── Session start request ─────────────────────────────────────────────────
@@ -127,3 +134,21 @@ public class DeviceUpdateRequest
     public Dictionary<string, string?>? Config { get; set; }
     public bool? IsActive { get; set; }
 }
+
+
+public class DeviceImportItem
+{
+    public string Name { get; set; } = "";
+    public string Identifier { get; set; } = "";
+    public string DeviceType { get; set; } = "tv";
+    public string ControlType { get; set; } = "fritzbox";
+    public Dictionary<string, string?> Config { get; set; } = new();
+    public bool IsActive { get; set; } = true;
+}
+
+public class DeviceImportRequest
+{
+    public List<DeviceImportItem> Devices { get; set; } = new();
+    public bool ReplaceExisting { get; set; } = false;
+}
+

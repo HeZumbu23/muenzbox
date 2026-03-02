@@ -105,6 +105,7 @@ public class DatabaseService
             ("weekend_periods", "NULL"),
             ("pocket_money_cents", "0"),
             ("pocket_money_weekly_cents", "0"),
+            ("icon", "'🐼'"),
         })
         {
             try { await ExecAsync(conn, $"ALTER TABLE children ADD COLUMN {col} TEXT DEFAULT {def}"); }

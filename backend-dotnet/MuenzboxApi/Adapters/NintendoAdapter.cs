@@ -19,10 +19,12 @@ public class NintendoAdapter
     private readonly string _lang;
     private readonly bool _useMock;
     private readonly MockAdapter _mock;
+    private readonly int _timeoutSeconds;
 
     private static readonly object _engineLock = new();
     private static bool _engineInitialized = false;
     private static bool _engineAvailable = false;
+    private static IntPtr _threadState = IntPtr.Zero;
 
     public NintendoAdapter(
         ILogger<NintendoAdapter> log,
@@ -35,6 +37,7 @@ public class NintendoAdapter
         _tz = config["NINTENDO_TIMEZONE"] ?? "Europe/Berlin";
         _lang = config["NINTENDO_LANG"] ?? "de-DE";
         _useMock = (config["USE_MOCK_ADAPTERS"] ?? "false").ToLower() == "true";
+        _timeoutSeconds = ParseTimeoutSeconds(config["NINTENDO_TIMEOUT_SECONDS"]);
 
         EnsureEngineInitialized();
     }
@@ -49,12 +52,13 @@ public class NintendoAdapter
             {
                 // Allow override via environment variable PYTHONNET_PYDLL
                 PythonEngine.Initialize();
+                _threadState = PythonEngine.BeginAllowThreads();
                 _engineAvailable = true;
             }
             catch (Exception ex)
             {
                 // Python not available – Nintendo integration disabled
-                Console.Error.WriteLine($"[NintendoAdapter] Python.NET init failed: {ex.Message}");
+                Console.Error.WriteLine($"[NintendoAdapter] Python.NET init failed (GIL setup): {ex.Message}");
                 _engineAvailable = false;
             }
         }
@@ -66,29 +70,64 @@ public class NintendoAdapter
     /// <summary>Unlock Switch for <paramref name="minutes"/> minutes.</summary>
     public async Task<bool> SwitchFreigeben(int minutes)
     {
+        return await SwitchFreigeben(minutes, new Dictionary<string, string?>());
+    }
+
+    public async Task<bool> SwitchFreigeben(int minutes, Dictionary<string, string?> cfg)
+    {
         if (_useMock) return _mock.SwitchFreigeben(minutes);
-        if (string.IsNullOrEmpty(_token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
+        var (token, tz, lang, timeoutSeconds) = GetCfg(cfg);
+        if (string.IsNullOrEmpty(token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
         if (!_engineAvailable) { _log.LogWarning("Nintendo: Python.NET nicht verfügbar"); return false; }
 
-        return await Task.Run(() => CallBridge("switch_freigeben_sync", minutes));
+        return await Task.Run(() => CallBridge("switch_freigeben_sync", token, tz, lang, timeoutSeconds, minutes));
     }
 
     /// <summary>Lock Switch by setting daily limit to 0.</summary>
     public async Task<bool> SwitchSperren()
     {
+        return await SwitchSperren(new Dictionary<string, string?>());
+    }
+
+    public async Task<bool> SwitchSperren(Dictionary<string, string?> cfg)
+    {
         if (_useMock) return _mock.SwitchSperren();
-        if (string.IsNullOrEmpty(_token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
+        var (token, tz, lang, timeoutSeconds) = GetCfg(cfg);
+        if (string.IsNullOrEmpty(token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
         if (!_engineAvailable) { _log.LogWarning("Nintendo: Python.NET nicht verfügbar"); return false; }
 
-        return await Task.Run(() => CallBridge("switch_sperren_sync"));
+        return await Task.Run(() => CallBridge("switch_sperren_sync", token, tz, lang, timeoutSeconds));
     }
 
     // ── Python.NET call ───────────────────────────────────────────────────
 
-    private bool CallBridge(string funcName, int? minutes = null)
+    private (string token, string tz, string lang, int timeoutSeconds) GetCfg(Dictionary<string, string?> cfg)
+    {
+        string Get(string key, string fallback) =>
+            (cfg.GetValueOrDefault(key) ?? fallback).Trim();
+
+        var timeoutRaw = Get("timeout_seconds", _timeoutSeconds.ToString());
+
+        return (
+            Get("token", _token),
+            Get("timezone", _tz),
+            Get("lang", _lang),
+            ParseTimeoutSeconds(timeoutRaw)
+        );
+    }
+
+    private static int ParseTimeoutSeconds(string? raw)
+    {
+        if (int.TryParse(raw, out var parsed))
+            return Math.Clamp(parsed, 5, 120);
+        return 20;
+    }
+
+    private bool CallBridge(string funcName, string token, string tz, string lang, int timeoutSeconds, int? minutes = null)
     {
         try
         {
+            // GIL must be acquired per call after Initialize()+BeginAllowThreads()
             using (Py.GIL())
             {
                 dynamic sys = Py.Import("sys");
@@ -105,11 +144,11 @@ public class NintendoAdapter
 
                 bool result;
                 if (funcName == "switch_freigeben_sync" && minutes.HasValue)
-                    result = (bool)bridge.switch_freigeben_sync(_token, _tz, _lang, minutes.Value);
+                    result = (bool)bridge.switch_freigeben_sync(token, tz, lang, minutes.Value, timeoutSeconds);
                 else
-                    result = (bool)bridge.switch_sperren_sync(_token, _tz, _lang);
+                    result = (bool)bridge.switch_sperren_sync(token, tz, lang, timeoutSeconds);
 
-                _log.LogInformation("Nintendo: {Func} → {Result}", funcName, result);
+                _log.LogInformation("Nintendo: {Func} (timeout={Timeout}s) → {Result}", funcName, timeoutSeconds, result);
                 return result;
             }
         }

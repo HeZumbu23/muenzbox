@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getChildStatus, getActiveSession } from '../api.js'
+import { getChildStatus, getActiveSession, setChildIcon } from '../api.js'
+
+const ANIMAL_ICONS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵']
 
 function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
   const [showSelect, setShowSelect] = useState(false)
@@ -96,6 +98,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
   const [status, setStatus] = useState(null)
   const [activeSession, setActiveSession] = useState(null)
   const [error, setError] = useState('')
+  const [showIconPicker, setShowIconPicker] = useState(false)
 
   const load = async () => {
     try {
@@ -142,8 +145,14 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <div>
           <p className="text-white/70 text-sm font-bold uppercase tracking-wider">Hallo</p>
-          <h2 className="text-white text-3xl font-black">{status.name}</h2>
+          <h2 className="text-white text-3xl font-black">{status.icon || "🐼"} {status.name}</h2>
         </div>
+        <button
+          onClick={() => setShowIconPicker(true)}
+          className="text-white/80 hover:text-white font-bold text-lg transition-colors px-4 py-2"
+        >
+          Icon ändern
+        </button>
         <button
           onClick={onLogout}
           className="text-white/50 hover:text-white/80 font-bold text-lg transition-colors px-4 py-2"
@@ -202,6 +211,39 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
           onStart={(coins) => onSessionStart(null, 'tv', coins)}
         />
       </div>
+
+      {showIconPicker && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-md">
+            <p className="text-gray-900 text-xl font-black mb-3">Wähle dein Tier-Icon</p>
+            <div className="grid grid-cols-6 gap-2">
+              {ANIMAL_ICONS.map((icon) => (
+                <button
+                  key={icon}
+                  onClick={async () => {
+                    try {
+                      await setChildIcon(childId, icon, token)
+                      setStatus((s) => ({ ...s, icon }))
+                      setShowIconPicker(false)
+                    } catch (e) {
+                      setError(e.message)
+                    }
+                  }}
+                  className="text-3xl bg-gray-100 hover:bg-gray-200 rounded-xl p-2"
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowIconPicker(false)}
+              className="mt-4 w-full py-2 bg-gray-800 text-white rounded-xl font-bold"
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

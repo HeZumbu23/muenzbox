@@ -113,3 +113,16 @@ export const adminDeleteDevice = (deviceId, token) =>
 
 export const adminGetMockStatus = (token) =>
   request('/admin/mock-status', { token })
+
+export const setChildIcon = (childId, icon, token) =>
+  request(`/children/${childId}/icon`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ icon }),
+  })
+
+export const adminExportDevices = (token) =>
+  request('/admin/devices/export', { token })
+
+export const adminImportDevices = (data, token) =>
+  request('/admin/devices/import', { method: 'POST', token, body: JSON.stringify(data) })
