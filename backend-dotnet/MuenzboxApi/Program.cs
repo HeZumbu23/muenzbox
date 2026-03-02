@@ -59,8 +59,6 @@ builder.Services.AddCors(options =>
 
 // ── Logging ────────────────────────────────────────────────────────────────
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole(opts =>
-    opts.FormatterName = "simple");
 builder.Logging.AddSimpleConsole(opts =>
 {
     opts.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
