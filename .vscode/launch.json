@@ -14,6 +14,7 @@
       "request": "launch",
       "projectPath": "${workspaceFolder}/backend-dotnet/MuenzboxApi/MuenzboxApi.csproj",
       "preLaunchTask": "dotnet: build",
+      "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/.env",
       "env": {
         "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db",
