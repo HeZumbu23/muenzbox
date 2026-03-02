@@ -13,7 +13,7 @@ Set USE_MOCK_ADAPTERS=true to skip real hardware and use in-memory simulation.
 import os
 import httpx
 import logging
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,51 @@ def _find_entry_id(entries: list[dict], identifier: str) -> str | None:
             return entry.get(".id")
 
     return None
+
+
+
+def _entry_url(base_url: str, entry_id: str) -> str:
+    # RouterOS ids look like "*1"; encode safely for path usage ("*" -> "%2A").
+    return f"{base_url}/rest/ip/firewall/address-list/{quote(str(entry_id), safe='')}"
+
+
+async def _patch_disabled(
+    host: str,
+    user: str,
+    password: str,
+    entry_id: str,
+    disabled: bool,
+) -> bool:
+    """Patch disabled flag with payload fallbacks for RouterOS version quirks."""
+    payloads = [{"disabled": disabled}, {"disabled": str(disabled).lower()}]
+
+    for base_url in _base_urls(host):
+        for payload in payloads:
+            try:
+                async with httpx.AsyncClient(verify=False, timeout=10) as client:
+                    resp = await client.patch(
+                        _entry_url(base_url, entry_id),
+                        auth=(user, password),
+                        json=payload,
+                    )
+                    resp.raise_for_status()
+                    return True
+            except httpx.HTTPStatusError as e:
+                # Retry with alternate payload format on explicit validation errors.
+                if e.response is not None and e.response.status_code == 400:
+                    logger.warning(
+                        "MikroTik: PATCH 400 mit payload=%s (entry_id=%s), versuche Fallback",
+                        payload,
+                        entry_id,
+                    )
+                    continue
+                logger.error("MikroTik: PATCH Fehler: %s", e)
+                break
+            except httpx.TransportError:
+                break
+
+    return False
+
 
 def _base_urls(host: str) -> list[str]:
     """Return base URLs for RouterOS REST API.
@@ -154,20 +199,10 @@ async def tv_freigeben(identifier: str, config: dict = {}) -> bool:
         logger.error("MikroTik: TV-Eintrag nicht gefunden (identifier=%s)", identifier)
         return False
     try:
-        for base_url in _base_urls(host):
-            try:
-                async with httpx.AsyncClient(verify=False, timeout=10) as client:
-                    resp = await client.patch(
-                        f"{base_url}/rest/ip/firewall/address-list/{entry_id}",
-                        auth=(user, password),
-                        json={"disabled": "true"},
-                    )
-                    resp.raise_for_status()
-                    logger.info("MikroTik: TV freigegeben (identifier=%s)", identifier)
-                    return True
-            except httpx.TransportError:
-                continue
-        logger.error("MikroTik: Fehler beim Freigeben: Keine Verbindung zu %s", host)
+        if await _patch_disabled(host, user, password, entry_id, True):
+            logger.info("MikroTik: TV freigegeben (identifier=%s)", identifier)
+            return True
+        logger.error("MikroTik: Fehler beim Freigeben: Keine Verbindung oder Request ungültig (%s)", host)
         return False
     except Exception as e:
         logger.error("MikroTik: Fehler beim Freigeben: %s", e)
@@ -191,20 +226,10 @@ async def tv_sperren(identifier: str, config: dict = {}) -> bool:
         logger.error("MikroTik: TV-Eintrag nicht gefunden (identifier=%s)", identifier)
         return False
     try:
-        for base_url in _base_urls(host):
-            try:
-                async with httpx.AsyncClient(verify=False, timeout=10) as client:
-                    resp = await client.patch(
-                        f"{base_url}/rest/ip/firewall/address-list/{entry_id}",
-                        auth=(user, password),
-                        json={"disabled": "false"},
-                    )
-                    resp.raise_for_status()
-                    logger.info("MikroTik: TV gesperrt (identifier=%s)", identifier)
-                    return True
-            except httpx.TransportError:
-                continue
-        logger.error("MikroTik: Fehler beim Sperren: Keine Verbindung zu %s", host)
+        if await _patch_disabled(host, user, password, entry_id, False):
+            logger.info("MikroTik: TV gesperrt (identifier=%s)", identifier)
+            return True
+        logger.error("MikroTik: Fehler beim Sperren: Keine Verbindung oder Request ungültig (%s)", host)
         return False
     except Exception as e:
         logger.error("MikroTik: Fehler beim Sperren: %s", e)
@@ -230,7 +255,7 @@ async def tv_status(identifier: str, config: dict = {}) -> bool:
             try:
                 async with httpx.AsyncClient(verify=False, timeout=10) as client:
                     resp = await client.get(
-                        f"{base_url}/rest/ip/firewall/address-list/{entry_id}",
+                        _entry_url(base_url, entry_id),
                         auth=(user, password),
                     )
                     resp.raise_for_status()
