@@ -8,7 +8,7 @@ const DEVICE_TYPE_OPTIONS = [
 const CONTROL_TYPE_OPTIONS = [
   { value: 'fritzbox', label: '🌐 Fritz!Box' },
   { value: 'mikrotik', label: '⚙️ MikroTik' },
-  { value: 'nintendo', label: '🎮 Nintendo Parental Controls' },
+  { value: 'nintendo', label: '🎮 Nintendo Account' },
   { value: 'schedule_only', label: '🕐 Nur Zeitplan (keine Hardware)' },
   { value: 'none', label: '— Keine Steuerung' },
 ]
@@ -51,10 +51,7 @@ export default function DeviceForm({ device, onSave, onClose }) {
   const updateCfg = (key, val) => setForm((f) => ({ ...f, config: { ...f.config, [key]: val } }))
   const cfg = form.config
 
-  const controlTypeOptions = CONTROL_TYPE_OPTIONS.filter((opt) => {
-    if (form.device_type === "nintendo") return ['nintendo', 'schedule_only', 'none'].includes(opt.value)
-    return ['fritzbox', 'mikrotik', 'schedule_only', 'none'].includes(opt.value)
-  })
+  const controlTypeOptions = CONTROL_TYPE_OPTIONS
 
   const handleSave = async () => {
     if (!form.name.trim()) { alert('Anzeigename erforderlich'); return }
@@ -91,7 +88,6 @@ export default function DeviceForm({ device, onSave, onClose }) {
                 const newType = e.target.value
                 update('device_type', newType)
                 if (newType === 'nintendo' && ['fritzbox', 'mikrotik'].includes(form.control_type)) update('control_type', 'nintendo')
-                if (newType === 'tv' && form.control_type === 'nintendo') update('control_type', 'fritzbox')
               }}
               className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
             >
@@ -114,6 +110,8 @@ export default function DeviceForm({ device, onSave, onClose }) {
                     updateCfg('password', '')
                   }
                   update('control_type', newType)
+                  if (newType === 'nintendo') update('device_type', 'nintendo')
+                  if (['fritzbox', 'mikrotik'].includes(newType)) update('device_type', 'tv')
                 }}
                 className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
               >
