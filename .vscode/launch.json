@@ -5,9 +5,15 @@
       "name": "Backend + Frontend",
       "configurations": ["Backend (uvicorn)", "Frontend (vite)"],
       "stopAll": true
+    },
+    {
+      "name": "ASP.NET Backend + Frontend",
+      "configurations": ["Backend (ASP.NET)", "Frontend (vite)"],
+      "stopAll": true
     }
   ],
   "configurations": [
+    // ── Python / FastAPI (original) ────────────────────────────────────────
     {
       "name": "Backend (uvicorn)",
       "type": "debugpy",
@@ -21,6 +27,29 @@
       },
       "jinja": true
     },
+
+    // ── ASP.NET 9 backend (new) ────────────────────────────────────────────
+    {
+      "name": "Backend (ASP.NET)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/backend-dotnet/MuenzboxApi/MuenzboxApi.csproj",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db",
+        // Set to a valid libpython path on your dev machine, e.g.:
+        //   macOS (homebrew):  /opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12/lib/libpython3.12.dylib
+        //   Linux:             /usr/lib/x86_64-linux-gnu/libpython3.12.so.1.0
+        //   Windows:           C:\Python312\python312.dll
+        "PYTHONNET_PYDLL": "",
+        "USE_MOCK_ADAPTERS": "true"
+      },
+      "logging": {
+        "moduleLoad": false
+      }
+    },
+
+    // ── Frontend ───────────────────────────────────────────────────────────
     {
       "name": "Frontend (vite)",
       "type": "node",
