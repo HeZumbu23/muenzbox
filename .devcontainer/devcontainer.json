@@ -4,24 +4,20 @@
 
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "20" },
-    // .NET 9 SDK – needed for the ASP.NET backend
-    "ghcr.io/devcontainers/features/dotnet:2": { "version": "9.0" }
+      "ghcr.io/devcontainers/features/dotnet:2": { "version": "9.0" }
   },
 
-  // Alles einmalig nach dem Container-Build installieren
   "postCreateCommand": "bash .devcontainer/setup.sh",
 
-  // Ports automatisch weiterleiten
   "forwardPorts": [8420, 5173],
   "portsAttributes": {
     "8420": { "label": "Backend API" },
     "5173": { "label": "Frontend", "onAutoForward": "openBrowser" }
   },
 
-  // Im Devcontainer: API läuft auf localhost, nicht auf 'backend' (Docker-Compose-Name)
   "remoteEnv": {
     "VITE_API_TARGET": "http://localhost:8420",
-    // Python.NET: devcontainers/python:3.12 installs Python from source to /usr/local
+    // devcontainers/python:3.12 installs Python from source to /usr/local
     "PYTHONNET_PYDLL": "/usr/local/lib/libpython3.12.so.1.0",
     "USE_MOCK_ADAPTERS": "true"
   },
@@ -29,29 +25,21 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        // Python
-        "ms-python.python",
-        "ms-python.debugpy",
-        "ms-python.black-formatter",
-        // C# / .NET
         "ms-dotnettools.csharp",
         "ms-dotnettools.csdevkit",
-        // Frontend
+        "ms-python.python",
+        "ms-python.debugpy",
         "esbenp.prettier-vscode",
         "bradlc.vscode-tailwindcss",
         "dbaeumer.vscode-eslint"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "editor.formatOnSave": true,
-        "[python]": {
-          "editor.defaultFormatter": "ms-python.black-formatter"
+        "[csharp]": {
+          "editor.defaultFormatter": "ms-dotnettools.csharp"
         },
         "[javascriptreact]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "[csharp]": {
-          "editor.defaultFormatter": "ms-dotnettools.csharp"
         }
       }
     }

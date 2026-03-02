@@ -3,32 +3,11 @@
   "compounds": [
     {
       "name": "Backend + Frontend",
-      "configurations": ["Backend (uvicorn)", "Frontend (vite)"],
-      "stopAll": true
-    },
-    {
-      "name": "ASP.NET Backend + Frontend",
       "configurations": ["Backend (ASP.NET)", "Frontend (vite)"],
       "stopAll": true
     }
   ],
   "configurations": [
-    // ── Python / FastAPI (original) ────────────────────────────────────────
-    {
-      "name": "Backend (uvicorn)",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "uvicorn",
-      "args": ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8420"],
-      "cwd": "${workspaceFolder}/backend",
-      "envFile": "${workspaceFolder}/.env",
-      "env": {
-        "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db"
-      },
-      "jinja": true
-    },
-
-    // ── ASP.NET 9 backend (new) ────────────────────────────────────────────
     {
       "name": "Backend (ASP.NET)",
       "type": "dotnet",
@@ -48,8 +27,6 @@
         "moduleLoad": false
       }
     },
-
-    // ── Frontend ───────────────────────────────────────────────────────────
     {
       "name": "Frontend (vite)",
       "type": "node",

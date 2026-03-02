@@ -3,9 +3,6 @@ set -e
 
 echo "=== Münzbox Devcontainer Setup ==="
 
-echo "→ Python FastAPI-Backend: Pakete installieren..."
-pip install --quiet -r backend/requirements.txt
-
 echo "→ Python Nintendo-Bridge: pynintendoparental + aiohttp installieren..."
 pip install --quiet pynintendoparental aiohttp
 
@@ -30,11 +27,8 @@ fi
 echo ""
 echo "✅ Setup abgeschlossen!"
 echo ""
-echo "Starten mit F5:"
-echo "  'Backend + Frontend'         → Python FastAPI + Vite"
-echo "  'ASP.NET Backend + Frontend' → ASP.NET 9    + Vite"
+echo "Starten mit F5: 'Backend + Frontend'"
 echo ""
 echo "Manuell:"
-echo "  cd backend && uvicorn main:app --reload --port 8420"
 echo "  cd backend-dotnet && dotnet run --project MuenzboxApi"
 echo "  cd frontend && npm run dev"
