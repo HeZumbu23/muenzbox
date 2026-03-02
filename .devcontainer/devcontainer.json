@@ -31,7 +31,8 @@
         "ms-python.debugpy",
         "esbenp.prettier-vscode",
         "bradlc.vscode-tailwindcss",
-        "dbaeumer.vscode-eslint"
+        "dbaeumer.vscode-eslint",
+        "ms-dotnettools.vscode-dotnet-runtime"
       ],
       "settings": {
         "editor.formatOnSave": true,
