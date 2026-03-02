@@ -14,7 +14,7 @@ public class DatabaseService
 
     public DatabaseService(IConfiguration config, ILogger<DatabaseService> log)
     {
-        _dbPath = config["DATABASE_PATH"] ?? "/data/muenzbox.db";
+        _dbPath = config["DATABASE_PATH"] ?? "data/muenzbox.db";
         _log = log;
     }
 
