@@ -47,6 +47,7 @@ export default function App() {
     try { return JSON.parse(raw).child?.id ?? null } catch { return null }
   })
   const [activeSession, setActiveSession] = useState(null)
+  const [kioskError, setKioskError] = useState('')
   const [screen, setScreen] = useState(() => (sessionStorage.getItem('childAuth') ? 'overview' : 'select')) // select | pin | overview | session
 
   // --- Admin mode ---
@@ -91,6 +92,7 @@ export default function App() {
     const child = { id, name, icon: icon || "🐼" }
     setSelectedChild(child)
     sessionStorage.setItem('childAuth', JSON.stringify({ token, child }))
+    setKioskError('')
     setScreen('overview')
   }
 
@@ -105,14 +107,16 @@ export default function App() {
     try {
       const session = await startSession(childId, type, coins, childToken)
       setActiveSession(session)
+      setKioskError('')
       setScreen('session')
     } catch (e) {
-      alert(e.message)
+      setKioskError(e.message || 'Hardware konnte nicht freigeschaltet werden.')
     }
   }
 
   const handleSessionEnd = () => {
     setActiveSession(null)
+    setKioskError('')
     setScreen('overview')
   }
 
@@ -122,11 +126,25 @@ export default function App() {
     setChildToken(null)
     setChildId(null)
     setActiveSession(null)
+    setKioskError('')
     setScreen('select')
   }
 
   return (
     <div className="h-screen w-screen overflow-hidden">
+      {kioskError && (
+        <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-red-300/40 bg-red-900/90 px-4 py-3 text-white shadow-2xl">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm font-bold">⚠️ {kioskError}</p>
+            <button
+              onClick={() => setKioskError('')}
+              className="rounded-lg bg-white/20 px-2 py-1 text-xs font-extrabold hover:bg-white/30"
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      )}
       {screen === 'select' && (
         <ChildSelect onSelect={handleChildSelect} />
       )}
@@ -145,6 +163,7 @@ export default function App() {
           token={childToken}
           onSessionStart={handleSessionStart}
           onLogout={handleLogout}
+          onError={setKioskError}
         />
       )}
 
@@ -153,6 +172,7 @@ export default function App() {
           session={activeSession}
           token={childToken}
           onEnd={handleSessionEnd}
+          onError={setKioskError}
         />
       )}
 

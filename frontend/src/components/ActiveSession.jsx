@@ -12,7 +12,7 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export default function ActiveSession({ session, token, onEnd }) {
+export default function ActiveSession({ session, token, onEnd, onError }) {
   const [remaining, setRemaining] = useState(0)
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -45,9 +45,11 @@ export default function ActiveSession({ session, token, onEnd }) {
     setLoading(true)
     try {
       await endSession(session.id, token)
+      onError?.('')
       onEnd()
     } catch (e) {
-      alert(e.message)
+      onError?.(e.message || 'Session konnte nicht beendet werden.')
+      setConfirming(false)
     } finally {
       setLoading(false)
     }
