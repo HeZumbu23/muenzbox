@@ -16,6 +16,7 @@ public class ChildrenController : ControllerBase
     private readonly TimeUtilsService _time;
 
     private static readonly string FallbackPeriods = """[{"von":"08:00","bis":"20:00"}]""";
+    private static readonly HashSet<string> AllowedIcons = new() { "🦁", "🐻", "🐼", "🦊", "🐨", "🐯", "🦄", "🐸", "🐧", "🦋", "🐙", "🐵" };
 
     public ChildrenController(DatabaseService db, AuthService auth, TimeUtilsService time)
     {
@@ -33,7 +34,7 @@ public class ChildrenController : ControllerBase
         var result = new List<ChildPublic>();
 
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name, switch_coins, tv_coins FROM children ORDER BY name";
+        cmd.CommandText = "SELECT id, name, switch_coins, tv_coins, icon FROM children ORDER BY name";
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
@@ -41,7 +42,8 @@ public class ChildrenController : ControllerBase
                 reader.GetInt32(0),
                 reader.GetString(1),
                 reader.GetInt32(2),
-                reader.GetInt32(3)));
+                reader.GetInt32(3),
+                reader.IsDBNull(4) ? "🐼" : reader.GetString(4)));
         }
         return Ok(result);
     }
@@ -53,7 +55,7 @@ public class ChildrenController : ControllerBase
     {
         await using var conn = _db.CreateConnection();
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name, pin_hash FROM children WHERE id=@id";
+        cmd.CommandText = "SELECT id, name, pin_hash, icon FROM children WHERE id=@id";
         cmd.Parameters.AddWithValue("@id", childId);
         await using var reader = await cmd.ExecuteReaderAsync();
 
@@ -62,6 +64,7 @@ public class ChildrenController : ControllerBase
 
         var storedHash = reader.GetString(2);
         var name = reader.GetString(1);
+        var icon = reader.IsDBNull(3) ? "🐼" : reader.GetString(3);
 
         if (!_auth.VerifyPin(body.Pin, storedHash))
             return Unauthorized(new { detail = "Falsche PIN" });
@@ -73,7 +76,7 @@ public class ChildrenController : ControllerBase
             ["name"] = name,
         });
 
-        return Ok(new { token, child_id = childId, name });
+        return Ok(new { token, child_id = childId, name, icon });
     }
 
     // ── GET /api/children/{id}/status ─────────────────────────────────────
@@ -101,6 +104,7 @@ public class ChildrenController : ControllerBase
         return Ok(new ChildStatus(
             Id: (int)(long)row["id"]!,
             Name: (string)row["name"]!,
+            Icon: (string)(row["icon"] ?? "🐼"),
             SwitchCoins: (int)(long)(row["switch_coins"] ?? 0L),
             SwitchCoinsWeekly: (int)(long)(row["switch_coins_weekly"] ?? 0L),
             SwitchCoinsMax: (int)(long)(row["switch_coins_max"] ?? 10L),
@@ -113,6 +117,31 @@ public class ChildrenController : ControllerBase
             WeekendPeriods: weekend,
             IsWeekendOrHoliday: _time.IsWeekendOrHoliday()
         ));
+    }
+
+
+    // ── POST /api/children/{id}/icon ───────────────────────────────────────
+
+    [HttpPost("children/{childId:int}/icon")]
+    [Authorize]
+    public async Task<IActionResult> UpdateIcon(int childId, [FromBody] ChildIconUpdateRequest body)
+    {
+        if (!IsChildAuthorized(childId))
+            return Forbid();
+
+        var icon = (body.Icon ?? "").Trim();
+        if (!AllowedIcons.Contains(icon))
+            return BadRequest(new { detail = "Ungültiges Icon" });
+
+        await using var conn = _db.CreateConnection();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE children SET icon=@icon WHERE id=@id";
+        cmd.Parameters.AddWithValue("@icon", icon);
+        cmd.Parameters.AddWithValue("@id", childId);
+        var rows = await cmd.ExecuteNonQueryAsync();
+        if (rows == 0) return NotFound(new { detail = "Kind nicht gefunden" });
+
+        return Ok(new { ok = true, icon });
     }
 
     // ── GET /api/children/{id}/active-session ─────────────────────────────

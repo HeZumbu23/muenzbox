@@ -48,7 +48,7 @@ export default function PinInput({ child, onSuccess, onBack }) {
       setLoading(true)
       try {
         const res = await verifyPin(child.id, pin)
-        onSuccess(res.token, res.child_id, res.name)
+        onSuccess(res.token, res.child_id, res.name, res.icon)
       } catch {
         setError('Falsche PIN!')
         setPin('')

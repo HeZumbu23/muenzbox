@@ -85,10 +85,10 @@ export default function App() {
     setScreen('pin')
   }
 
-  const handlePinSuccess = (token, id, name) => {
+  const handlePinSuccess = (token, id, name, icon) => {
     setChildToken(token)
     setChildId(id)
-    const child = { id, name }
+    const child = { id, name, icon: icon || "🐼" }
     setSelectedChild(child)
     sessionStorage.setItem('childAuth', JSON.stringify({ token, child }))
     setScreen('overview')
