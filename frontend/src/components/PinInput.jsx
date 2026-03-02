@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { verifyPin } from '../api.js'
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓']
@@ -7,6 +7,29 @@ export default function PinInput({ child, onSuccess, onBack }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (loading) return
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault()
+        handleKey(e.key)
+        return
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault()
+        handleKey('⌫')
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        handleKey('✓')
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [loading, pin])
 
   const handleKey = async (key) => {
     if (loading) return

@@ -28,11 +28,26 @@ export default function App() {
   const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem('adminToken'))
 
   // Children kiosk state
-  const [selectedChild, setSelectedChild] = useState(null)  // { id, name }
-  const [childToken, setChildToken] = useState(null)
-  const [childId, setChildId] = useState(null)
+  const [selectedChild, setSelectedChild] = useState(() => {
+    const raw = sessionStorage.getItem('childAuth')
+    if (!raw) return null
+    try {
+      const data = JSON.parse(raw)
+      return data.child ? { id: data.child.id, name: data.child.name } : null
+    } catch { return null }
+  })  // { id, name }
+  const [childToken, setChildToken] = useState(() => {
+    const raw = sessionStorage.getItem('childAuth')
+    if (!raw) return null
+    try { return JSON.parse(raw).token ?? null } catch { return null }
+  })
+  const [childId, setChildId] = useState(() => {
+    const raw = sessionStorage.getItem('childAuth')
+    if (!raw) return null
+    try { return JSON.parse(raw).child?.id ?? null } catch { return null }
+  })
   const [activeSession, setActiveSession] = useState(null)
-  const [screen, setScreen] = useState('select') // select | pin | overview | session
+  const [screen, setScreen] = useState(() => (sessionStorage.getItem('childAuth') ? 'overview' : 'select')) // select | pin | overview | session
 
   // --- Admin mode ---
   if (IS_ADMIN) {
@@ -73,7 +88,9 @@ export default function App() {
   const handlePinSuccess = (token, id, name) => {
     setChildToken(token)
     setChildId(id)
-    setSelectedChild((c) => ({ ...c, name }))
+    const child = { id, name }
+    setSelectedChild(child)
+    sessionStorage.setItem('childAuth', JSON.stringify({ token, child }))
     setScreen('overview')
   }
 
@@ -100,6 +117,7 @@ export default function App() {
   }
 
   const handleLogout = () => {
+    sessionStorage.removeItem('childAuth')
     setSelectedChild(null)
     setChildToken(null)
     setChildId(null)

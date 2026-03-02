@@ -19,7 +19,6 @@ public class AdminController : ControllerBase
     private readonly MockAdapter _mock;
     private readonly ILogger<AdminController> _log;
 
-    private static readonly string FallbackPeriods = """[{"von":"08:00","bis":"20:00"}]""";
     private static readonly HashSet<string> AllowedDeviceTypes = new() { "tv", "nintendo", "switch" };
     private static readonly HashSet<string> AllowedControlTypes = new() { "fritzbox", "mikrotik", "nintendo", "schedule_only", "none" };
 

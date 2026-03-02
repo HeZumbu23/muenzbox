@@ -92,64 +92,109 @@ public class SessionsController : ControllerBase
             return Conflict(new { detail = "Es läuft bereits eine Session" });
         }
 
-        // Deduct coins + create session
-        var now = DateTime.UtcNow;
-        var nowIso = now.ToString("o");
-        var endsAt = now.AddMinutes(body.Coins * CoinMinutes).ToString("o");
+        // Enable hardware first; do NOT consume coins if unlock fails
+        _log.LogInformation("[Session] {Child}: Hardware-Freigabe angefordert ({Type}, {Coins} Münze(n))",
+            childName, body.Type, body.Coins);
 
-        await ExecAsync(conn,
-            $"UPDATE children SET {coinField}={coinField}-@coins WHERE id=@id",
-            ("@coins", body.Coins), ("@id", body.ChildId));
-
-        await ExecAsync(conn,
-            "INSERT INTO coin_log (child_id, type, delta, reason, created_at) VALUES (@cid,@t,@d,'session',@ts)",
-            ("@cid", body.ChildId), ("@t", body.Type), ("@d", -body.Coins), ("@ts", nowIso));
-
-        long sessionId;
-        await using (var ins = conn.CreateCommand())
-        {
-            ins.CommandText =
-                "INSERT INTO sessions (child_id, type, started_at, ends_at, coins_used, status) " +
-                "VALUES (@cid,@t,@sa,@ea,@cu,'active')";
-            ins.Parameters.AddWithValue("@cid", body.ChildId);
-            ins.Parameters.AddWithValue("@t", body.Type);
-            ins.Parameters.AddWithValue("@sa", nowIso);
-            ins.Parameters.AddWithValue("@ea", endsAt);
-            ins.Parameters.AddWithValue("@cu", body.Coins);
-            await ins.ExecuteNonQueryAsync();
-
-            await using var lastId = conn.CreateCommand();
-            lastId.CommandText = "SELECT last_insert_rowid()";
-            sessionId = (long)(await lastId.ExecuteScalarAsync() ?? 0L);
-        }
-
-        // Enable hardware
-        bool hardwareOk = false;
+        bool hardwareOk;
         if (body.Type == "tv")
         {
             var dev = await GetTvDeviceAsync(conn);
             hardwareOk = await _adapters.TvFreigeben(dev.ControlType, dev.Identifier, dev.Config);
         }
-        else if (body.Type == "switch")
+        else
         {
             var dev = await GetNintendoDeviceAsync(conn);
             hardwareOk = await _nintendo.SwitchFreigeben(body.Coins * CoinMinutes, dev.Config);
         }
 
-        _log.LogInformation(
-            "[Session] {Child} startet {Type}-Session #{SessionId}: {Coins} Münze(n) ({Minutes} Min), bis {EndsAt}, Hardware: {HardwareOk}",
-            childName, body.Type, sessionId, body.Coins, body.Coins * CoinMinutes, endsAt, hardwareOk);
+        if (!hardwareOk)
+        {
+            _log.LogWarning("[Session] {Child} ({Type}): Hardware-Freigabe fehlgeschlagen – Session wird nicht gestartet, keine Münze verbraucht",
+                childName, body.Type);
+            return StatusCode(502, new { detail = "Hardware konnte nicht freigeschaltet werden. Münzen wurden nicht verbraucht." });
+        }
 
-        return Ok(new SessionResponse(
-            Id: (int)sessionId,
-            ChildId: body.ChildId,
-            Type: body.Type,
-            StartedAt: nowIso,
-            EndsAt: endsAt,
-            CoinsUsed: body.Coins,
-            Status: "active",
-            HardwareOk: hardwareOk
-        ));
+        var now = DateTime.UtcNow;
+        var nowIso = now.ToString("o");
+        var endsAt = now.AddMinutes(body.Coins * CoinMinutes).ToString("o");
+
+        await using var tx = await conn.BeginTransactionAsync();
+        try
+        {
+            await using (var upd = conn.CreateCommand())
+            {
+                upd.Transaction = (Microsoft.Data.Sqlite.SqliteTransaction)tx;
+                upd.CommandText = $"UPDATE children SET {coinField}={coinField}-@coins WHERE id=@id";
+                upd.Parameters.AddWithValue("@coins", body.Coins);
+                upd.Parameters.AddWithValue("@id", body.ChildId);
+                await upd.ExecuteNonQueryAsync();
+            }
+
+            await using (var clog = conn.CreateCommand())
+            {
+                clog.Transaction = (Microsoft.Data.Sqlite.SqliteTransaction)tx;
+                clog.CommandText = "INSERT INTO coin_log (child_id, type, delta, reason, created_at) VALUES (@cid,@t,@d,'session',@ts)";
+                clog.Parameters.AddWithValue("@cid", body.ChildId);
+                clog.Parameters.AddWithValue("@t", body.Type);
+                clog.Parameters.AddWithValue("@d", -body.Coins);
+                clog.Parameters.AddWithValue("@ts", nowIso);
+                await clog.ExecuteNonQueryAsync();
+            }
+
+            long sessionId;
+            await using (var ins = conn.CreateCommand())
+            {
+                ins.Transaction = (Microsoft.Data.Sqlite.SqliteTransaction)tx;
+                ins.CommandText =
+                    "INSERT INTO sessions (child_id, type, started_at, ends_at, coins_used, status) " +
+                    "VALUES (@cid,@t,@sa,@ea,@cu,'active')";
+                ins.Parameters.AddWithValue("@cid", body.ChildId);
+                ins.Parameters.AddWithValue("@t", body.Type);
+                ins.Parameters.AddWithValue("@sa", nowIso);
+                ins.Parameters.AddWithValue("@ea", endsAt);
+                ins.Parameters.AddWithValue("@cu", body.Coins);
+                await ins.ExecuteNonQueryAsync();
+
+                await using var lastId = conn.CreateCommand();
+                lastId.Transaction = (Microsoft.Data.Sqlite.SqliteTransaction)tx;
+                lastId.CommandText = "SELECT last_insert_rowid()";
+                sessionId = (long)(await lastId.ExecuteScalarAsync() ?? 0L);
+            }
+
+            await tx.CommitAsync();
+
+            _log.LogInformation(
+                "[Session] {Child} startet {Type}-Session #{SessionId}: {Coins} Münze(n) ({Minutes} Min), bis {EndsAt}, Hardware: OK",
+                childName, body.Type, sessionId, body.Coins, body.Coins * CoinMinutes, endsAt);
+
+            return Ok(new SessionResponse(
+                Id: (int)sessionId,
+                ChildId: body.ChildId,
+                Type: body.Type,
+                StartedAt: nowIso,
+                EndsAt: endsAt,
+                CoinsUsed: body.Coins,
+                Status: "active",
+                HardwareOk: true
+            ));
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            // Best-effort re-lock if DB update failed after unlock
+            if (body.Type == "tv")
+            {
+                var dev = await GetTvDeviceAsync(conn);
+                await _adapters.TvSperren(dev.ControlType, dev.Identifier, dev.Config);
+            }
+            else
+            {
+                var dev = await GetNintendoDeviceAsync(conn);
+                await _nintendo.SwitchSperren(dev.Config);
+            }
+            throw;
+        }
     }
 
     // ── POST /api/sessions/{id}/end ───────────────────────────────────────
