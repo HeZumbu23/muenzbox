@@ -16,18 +16,21 @@ public class SessionsController : ControllerBase
     private readonly AdapterDispatcher _adapters;
     private readonly NintendoAdapter _nintendo;
     private readonly TimeUtilsService _time;
+    private readonly ILogger<SessionsController> _log;
     private const int CoinMinutes = 30;
 
     public SessionsController(
         DatabaseService db,
         AdapterDispatcher adapters,
         NintendoAdapter nintendo,
-        TimeUtilsService time)
+        TimeUtilsService time,
+        ILogger<SessionsController> log)
     {
         _db = db;
         _adapters = adapters;
         _nintendo = nintendo;
         _time = time;
+        _log = log;
     }
 
     // ── POST /api/sessions ────────────────────────────────────────────────
@@ -55,6 +58,8 @@ public class SessionsController : ControllerBase
             ("@id", body.ChildId));
         if (child is null) return NotFound(new { detail = "Kind nicht gefunden" });
 
+        var childName = child["name"] as string ?? body.ChildId.ToString();
+
         // Check time window
         var allowed = ParsePeriods(child["allowed_periods"] as string);
         var weekend = ParsePeriods(child["weekend_periods"] as string);
@@ -62,6 +67,8 @@ public class SessionsController : ControllerBase
         if (!_time.IsInPeriods(active))
         {
             var times = string.Join(", ", active.Select(p => $"{p.Von}–{p.Bis} Uhr"));
+            _log.LogWarning("[Session] {Child} ({Type}): abgelehnt – außerhalb erlaubter Zeit ({Times})",
+                childName, body.Type, times);
             return StatusCode(403, new { detail = $"Außerhalb der erlaubten Zeit ({times})" });
         }
 
@@ -69,14 +76,21 @@ public class SessionsController : ControllerBase
         var coinField = body.Type == "switch" ? "switch_coins" : "tv_coins";
         var available = (int)(long)(child[coinField] ?? 0L);
         if (available < body.Coins)
+        {
+            _log.LogWarning("[Session] {Child} ({Type}): abgelehnt – zu wenig Münzen (hat {Available}, braucht {Requested})",
+                childName, body.Type, available, body.Coins);
             return BadRequest(new { detail = $"Nicht genug Münzen (verfügbar: {available})" });
+        }
 
         // Check for existing active session
         var existing = await GetRowAsync(conn,
             "SELECT id FROM sessions WHERE child_id=@id AND status='active'",
             ("@id", body.ChildId));
         if (existing is not null)
+        {
+            _log.LogWarning("[Session] {Child}: abgelehnt – Session läuft bereits", childName);
             return Conflict(new { detail = "Es läuft bereits eine Session" });
+        }
 
         // Deduct coins + create session
         var now = DateTime.UtcNow;
@@ -121,6 +135,10 @@ public class SessionsController : ControllerBase
             hardwareOk = await _nintendo.SwitchFreigeben(body.Coins * CoinMinutes);
         }
 
+        _log.LogInformation(
+            "[Session] {Child} startet {Type}-Session #{SessionId}: {Coins} Münze(n) ({Minutes} Min), bis {EndsAt}, Hardware: {HardwareOk}",
+            childName, body.Type, sessionId, body.Coins, body.Coins * CoinMinutes, endsAt, hardwareOk);
+
         return Ok(new SessionResponse(
             Id: (int)sessionId,
             ChildId: body.ChildId,
@@ -154,6 +172,9 @@ public class SessionsController : ControllerBase
             ("@id", sessionId));
 
         var type = (string)(session["type"] ?? "");
+        _log.LogInformation("[Session] Kind {ChildId} beendet {Type}-Session #{SessionId} manuell",
+            childId, type, sessionId);
+
         if (type == "tv")
         {
             var dev = await GetTvDeviceAsync(conn);

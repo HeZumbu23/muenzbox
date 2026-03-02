@@ -83,6 +83,7 @@ public class SchedulerService : BackgroundService
             var pmCents = (long)(child["pocket_money_cents"] ?? 0L);
             var pmWeeklyCents = (long)(child["pocket_money_weekly_cents"] ?? 0L);
 
+            var name = child["name"] as string ?? id.ToString();
             var newSwitch = Math.Min(switchCoins + switchWeekly, switchMax);
             var newTv = Math.Min(tvCoins + tvWeekly, tvMax);
             var newPm = pmCents + pmWeeklyCents;
@@ -98,8 +99,18 @@ public class SchedulerService : BackgroundService
             updCmd.Parameters.AddWithValue("@id", id);
             await updCmd.ExecuteNonQueryAsync();
 
-            if (switchDelta > 0) await InsertCoinLogAsync(conn, id, "switch", switchDelta, "weekly_refill", now);
-            if (tvDelta > 0)     await InsertCoinLogAsync(conn, id, "tv", tvDelta, "weekly_refill", now);
+            if (switchDelta > 0)
+            {
+                await InsertCoinLogAsync(conn, id, "switch", switchDelta, "weekly_refill", now);
+                _log.LogInformation("[Wochenrefill] {Name}: Switch +{Delta} → {New}/{Max} Münzen",
+                    name, switchDelta, newSwitch, switchMax);
+            }
+            if (tvDelta > 0)
+            {
+                await InsertCoinLogAsync(conn, id, "tv", tvDelta, "weekly_refill", now);
+                _log.LogInformation("[Wochenrefill] {Name}: TV +{Delta} → {New}/{Max} Münzen",
+                    name, tvDelta, newTv, tvMax);
+            }
 
             if (pmWeeklyCents > 0)
             {

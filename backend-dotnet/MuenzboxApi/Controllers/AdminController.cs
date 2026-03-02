@@ -17,6 +17,7 @@ public class AdminController : ControllerBase
     private readonly AdapterDispatcher _adapters;
     private readonly NintendoAdapter _nintendo;
     private readonly MockAdapter _mock;
+    private readonly ILogger<AdminController> _log;
 
     private static readonly string FallbackPeriods = """[{"von":"08:00","bis":"20:00"}]""";
     private static readonly HashSet<string> AllowedDeviceTypes = new() { "tv" };
@@ -31,13 +32,15 @@ public class AdminController : ControllerBase
         AdapterDispatcher adapters,
         NintendoAdapter nintendo,
         MockAdapter mock,
-        IConfiguration config)
+        IConfiguration config,
+        ILogger<AdminController> log)
     {
         _db = db;
         _auth = auth;
         _adapters = adapters;
         _nintendo = nintendo;
         _mock = mock;
+        _log = log;
         _adminPin = config["ADMIN_PIN"] ?? "1234";
         _useMock = (config["USE_MOCK_ADAPTERS"] ?? "false").ToLower() == "true";
     }
@@ -48,8 +51,12 @@ public class AdminController : ControllerBase
     public IActionResult Verify([FromBody] AdminVerifyRequest body)
     {
         if (body.Pin != _adminPin)
+        {
+            _log.LogWarning("[Admin] Fehlgeschlagener Login-Versuch");
             return Unauthorized(new { detail = "Falsche Admin-PIN" });
+        }
 
+        _log.LogInformation("[Admin] Login erfolgreich");
         var token = _auth.CreateToken(new() { ["sub"] = "admin", ["role"] = "admin" }, 12);
         return Ok(new { token });
     }
@@ -109,6 +116,7 @@ public class AdminController : ControllerBase
         idCmd.CommandText = "SELECT last_insert_rowid()";
         var id = (long)(await idCmd.ExecuteScalarAsync() ?? 0L);
 
+        _log.LogInformation("[Admin] Kind erstellt: {Name} (id={Id})", body.Name, id);
         Response.StatusCode = 201;
         return Ok(new { id, name = body.Name });
     }
@@ -145,6 +153,10 @@ public class AdminController : ControllerBase
             foreach (var (k, v) in updates) cmd.Parameters.AddWithValue($"@{k}", v);
             cmd.Parameters.AddWithValue("@id", childId);
             await cmd.ExecuteNonQueryAsync();
+
+            var changedFields = string.Join(", ", updates.Keys);
+            _log.LogInformation("[Admin] Kind {Name} (id={Id}) aktualisiert: {Fields}",
+                child["name"], childId, changedFields);
         }
 
         return Ok(new { ok = true });
@@ -156,6 +168,11 @@ public class AdminController : ControllerBase
     {
         if (!IsAdmin()) return Forbid();
         await using var conn = _db.CreateConnection();
+
+        var childToDelete = await GetRowAsync(conn, "SELECT name FROM children WHERE id=@id", ("@id", childId));
+        if (childToDelete is null) return NotFound(new { detail = "Kind nicht gefunden" });
+        var deletedName = childToDelete["name"] as string ?? childId.ToString();
+
         foreach (var sql in new[]
         {
             "DELETE FROM children WHERE id=@id",
@@ -169,6 +186,8 @@ public class AdminController : ControllerBase
             cmd.Parameters.AddWithValue("@id", childId);
             await cmd.ExecuteNonQueryAsync();
         }
+
+        _log.LogInformation("[Admin] Kind gelöscht: {Name} (id={Id})", deletedName, childId);
         return Ok(new { ok = true });
     }
 
@@ -197,6 +216,10 @@ public class AdminController : ControllerBase
             "INSERT INTO coin_log (child_id, type, delta, reason, created_at) VALUES (@cid,@t,@d,@r,@ts)",
             ("@cid", childId), ("@t", body.Type), ("@d", body.Delta), ("@r", body.Reason), ("@ts", now));
 
+        _log.LogInformation(
+            "[Münzen] {Name} (id={Id}): {Type} {Delta:+0;-0} Münzen (Grund: {Reason}), neuer Stand: {NewVal}",
+            child["name"], childId, body.Type, body.Delta, body.Reason, newVal);
+
         return Ok(new { ok = true, new_value = newVal });
     }
 
@@ -219,6 +242,10 @@ public class AdminController : ControllerBase
             "INSERT INTO pocket_money_log (child_id, delta_cents, reason, note, created_at) VALUES (@cid,@d,@r,@n,@ts)",
             ("@cid", childId), ("@d", body.DeltaCents), ("@r", body.Reason),
             ("@n", (object?)body.Note ?? DBNull.Value), ("@ts", now));
+
+        _log.LogInformation(
+            "[Taschengeld] {Name} (id={Id}): {Delta:+0;-0} Cent (Grund: {Reason}), neuer Stand: {NewVal} Cent",
+            child["name"], childId, body.DeltaCents, body.Reason, newVal);
 
         return Ok(new { ok = true, new_value_cents = newVal });
     }
@@ -256,6 +283,10 @@ public class AdminController : ControllerBase
         await ExecAsync(conn, "UPDATE sessions SET status='cancelled' WHERE id=@id", ("@id", sessionId));
 
         var type = (string)(session["type"] ?? "");
+        var childId = (long)(session["child_id"] ?? 0L);
+        _log.LogInformation("[Admin] Session #{SessionId} ({Type}, Kind {ChildId}) vom Admin abgebrochen",
+            sessionId, type, childId);
+
         if (type == "tv")
         {
             var dev = await GetTvDeviceAsync(conn);
