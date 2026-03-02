@@ -34,7 +34,7 @@ public class MikrotikAdapter
         var entryId = await GetEntryId(host, user, pass, identifier);
         if (entryId is null) { _log.LogError("MikroTik: Eintrag nicht gefunden ({Id})", identifier); return false; }
 
-        return await Patch(host, user, pass, entryId, "true", identifier);
+        return await Patch(host, user, pass, entryId, true, identifier);
     }
 
     public async Task<bool> TvSperren(string identifier, Dictionary<string, string?> cfg)
@@ -45,7 +45,7 @@ public class MikrotikAdapter
         var entryId = await GetEntryId(host, user, pass, identifier);
         if (entryId is null) return false;
 
-        return await Patch(host, user, pass, entryId, "false", identifier);
+        return await Patch(host, user, pass, entryId, false, identifier);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -152,23 +152,42 @@ public class MikrotikAdapter
     }
 
     private async Task<bool> Patch(string host, string user, string pass, string entryId,
-        string disabled, string identifier)
+        bool disabled, string identifier)
     {
         foreach (var baseUrl in BaseUrls(host))
         {
             try
             {
                 using var client = CreateClient(user, pass);
-                var resp = await client.PostAsJsonAsync(
-                    $"{baseUrl}/rest/ip/firewall/address-list/set",
-                    new Dictionary<string, string>
+                var resp = await client.PatchAsJsonAsync(
+                    $"{baseUrl}/rest/ip/firewall/address-list/{entryId}",
+                    new { disabled });
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var body = await resp.Content.ReadAsStringAsync();
+                    _log.LogWarning("MikroTik: PATCH fehlgeschlagen bei {Url} ({Id}) – Status {Status}, Body: {Body}",
+                        baseUrl, identifier, (int)resp.StatusCode, body);
+
+                    var fallbackResp = await client.PostAsJsonAsync(
+                        $"{baseUrl}/rest/ip/firewall/address-list/set",
+                        new Dictionary<string, string>
+                        {
+                            [".id"] = entryId,
+                            ["disabled"] = disabled ? "yes" : "no"
+                        });
+
+                    if (!fallbackResp.IsSuccessStatusCode)
                     {
-                        [".id"] = entryId,
-                        ["disabled"] = disabled
-                    });
-                resp.EnsureSuccessStatusCode();
+                        var fallbackBody = await fallbackResp.Content.ReadAsStringAsync();
+                        _log.LogWarning("MikroTik: SET-Fallback fehlgeschlagen bei {Url} ({Id}) – Status {Status}, Body: {Body}",
+                            baseUrl, identifier, (int)fallbackResp.StatusCode, fallbackBody);
+                        fallbackResp.EnsureSuccessStatusCode();
+                    }
+                }
+
                 _log.LogInformation("MikroTik: TV {Action} ({Id})",
-                    disabled == "true" ? "freigegeben" : "gesperrt", identifier);
+                    disabled ? "freigegeben" : "gesperrt", identifier);
                 return true;
             }
             catch (HttpRequestException ex)
