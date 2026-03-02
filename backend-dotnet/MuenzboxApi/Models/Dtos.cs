@@ -64,10 +64,10 @@ public class ChildCreateRequest
     public string Pin { get; set; } = "";
     public int SwitchCoins { get; set; } = 0;
     public int SwitchCoinsWeekly { get; set; } = 2;
-    public int SwitchCoinsMax { get; set; } = 10;
+    public int SwitchCoinsMax { get; set; } = 100;
     public int TvCoins { get; set; } = 0;
     public int TvCoinsWeekly { get; set; } = 2;
-    public int TvCoinsMax { get; set; } = 10;
+    public int TvCoinsMax { get; set; } = 100;
     public int PocketMoneyCents { get; set; } = 0;
     public int PocketMoneyWeeklyCents { get; set; } = 0;
     public List<TimeSlot>? AllowedPeriods { get; set; }
