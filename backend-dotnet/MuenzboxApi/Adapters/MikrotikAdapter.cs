@@ -159,8 +159,9 @@ public class MikrotikAdapter
             try
             {
                 using var client = CreateClient(user, pass);
+                var escapedEntryId = Uri.EscapeDataString(entryId);
                 var resp = await client.PatchAsJsonAsync(
-                    $"{baseUrl}/rest/ip/firewall/address-list/{entryId}",
+                    $"{baseUrl}/rest/ip/firewall/address-list/{escapedEntryId}",
                     new { disabled });
                 resp.EnsureSuccessStatusCode();
                 _log.LogInformation("MikroTik: TV {Action} ({Id})",
