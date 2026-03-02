@@ -13,6 +13,7 @@
       "type": "dotnet",
       "request": "launch",
       "projectPath": "${workspaceFolder}/backend-dotnet/MuenzboxApi/MuenzboxApi.csproj",
+      "preLaunchTask": "dotnet: build",
       "envFile": "${workspaceFolder}/.env",
       "env": {
         "DATABASE_PATH": "${workspaceFolder}/data/muenzbox.db",

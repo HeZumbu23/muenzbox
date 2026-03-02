@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dotnet: build",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/backend-dotnet/MuenzboxApi/MuenzboxApi.csproj",
+        "-c", "Debug",
+        "--no-restore"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "dotnet: restore",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "restore",
+        "${workspaceFolder}/backend-dotnet/MuenzboxApi/MuenzboxApi.csproj"
+      ],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
