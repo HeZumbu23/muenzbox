@@ -15,6 +15,13 @@ venv/
 node_modules/
 frontend/dist/
 
+# .NET
+backend-dotnet/**/bin/
+backend-dotnet/**/obj/
+backend-dotnet/**/*.user
+backend-dotnet/**/*.suo
+backend-dotnet/.vs/
+
 # Editor
 .DS_Store
 *.swp
