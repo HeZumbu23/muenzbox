@@ -55,7 +55,7 @@ export default function DeviceForm({ device, onSave, onClose }) {
 
   const handleSave = async () => {
     if (!form.name.trim()) { alert('Anzeigename erforderlich'); return }
-    if (!form.identifier.trim()) { alert('Netzwerkname des Geräts erforderlich'); return }
+    if (form.control_type !== 'nintendo' && !form.identifier.trim()) { alert('Netzwerkname des Geräts erforderlich'); return }
     setSaving(true)
     try {
       await onSave(form)
@@ -180,7 +180,7 @@ export default function DeviceForm({ device, onSave, onClose }) {
           {/* Nintendo Konfiguration */}
           {form.control_type === 'nintendo' && (
             <div className="flex flex-col gap-3 bg-gray-800 rounded-2xl p-4">
-              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">🎮 Nintendo Zugangsdaten</p>
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">🎮 Nintendo Zugangsdaten (Gerätename nicht erforderlich)</p>
 
               <Field label="Parental-Control-Token" hint="Token aus Nintendo App/Bridge">
                 <Input value={cfg.token ?? ''} onChange={(v) => updateCfg('token', v)} placeholder="your_token_here" />
@@ -194,9 +194,6 @@ export default function DeviceForm({ device, onSave, onClose }) {
                 <Input value={cfg.lang ?? ''} onChange={(v) => updateCfg('lang', v)} placeholder="de-DE" />
               </Field>
 
-              <Field label="Gerätename" hint="Nur für Anzeige/Zuordnung">
-                <Input value={form.identifier} onChange={(v) => update('identifier', v)} placeholder="Nintendo Switch" />
-              </Field>
             </div>
           )}
 
