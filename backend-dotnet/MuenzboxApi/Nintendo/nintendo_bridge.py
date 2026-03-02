@@ -11,16 +11,17 @@ Functions exported to .NET:
 """
 
 import asyncio
+import aiohttp
 
 
 # ── Async implementation ───────────────────────────────────────────────────
 
-async def _freigeben_async(token: str, tz: str, lang: str, minutes: int) -> bool:
-    import aiohttp
+async def _freigeben_async(token: str, tz: str, lang: str, minutes: int, timeout_seconds: int) -> bool:
     from pynintendoparental import NintendoParental
     from pynintendoparental.authenticator import Authenticator
 
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=max(1, int(timeout_seconds)))
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         auth = Authenticator(token, session)
         await auth.async_complete_login(use_session_token=True)
         parental = await NintendoParental.create(auth, timezone=tz, lang=lang)
@@ -33,8 +34,7 @@ async def _freigeben_async(token: str, tz: str, lang: str, minutes: int) -> bool
     return True
 
 
-async def _sperren_async(token: str, tz: str, lang: str) -> bool:
-    import aiohttp
+async def _sperren_async(token: str, tz: str, lang: str, timeout_seconds: int) -> bool:
     from pynintendoparental import NintendoParental
     from pynintendoparental.authenticator import Authenticator
 
@@ -44,7 +44,8 @@ async def _sperren_async(token: str, tz: str, lang: str) -> bool:
     except ImportError:
         NintendoHttpException = None
 
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=max(1, int(timeout_seconds)))
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         auth = Authenticator(token, session)
         await auth.async_complete_login(use_session_token=True)
         parental = await NintendoParental.create(auth, timezone=tz, lang=lang)
@@ -67,19 +68,25 @@ async def _sperren_async(token: str, tz: str, lang: str) -> bool:
 
 # ── Synchronous wrappers (called from .NET via Python.NET) ─────────────────
 
-def switch_freigeben_sync(token, tz, lang, minutes) -> bool:
+def switch_freigeben_sync(token, tz, lang, minutes, timeout_seconds=20) -> bool:
     """Unlock Nintendo Switch for `minutes` minutes."""
     try:
-        return asyncio.run(_freigeben_async(str(token), str(tz), str(lang), int(minutes)))
+        return asyncio.run(asyncio.wait_for(
+            _freigeben_async(str(token), str(tz), str(lang), int(minutes), int(timeout_seconds)),
+            timeout=max(1, int(timeout_seconds))
+        ))
     except Exception as e:
         print(f"[nintendo_bridge] switch_freigeben_sync error: {e}")
         return False
 
 
-def switch_sperren_sync(token, tz, lang) -> bool:
+def switch_sperren_sync(token, tz, lang, timeout_seconds=20) -> bool:
     """Lock Nintendo Switch by setting daily limit to 0."""
     try:
-        return asyncio.run(_sperren_async(str(token), str(tz), str(lang)))
+        return asyncio.run(asyncio.wait_for(
+            _sperren_async(str(token), str(tz), str(lang), int(timeout_seconds)),
+            timeout=max(1, int(timeout_seconds))
+        ))
     except Exception as e:
         print(f"[nintendo_bridge] switch_sperren_sync error: {e}")
         return False

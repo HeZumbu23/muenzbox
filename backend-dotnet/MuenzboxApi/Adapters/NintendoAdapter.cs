@@ -19,6 +19,7 @@ public class NintendoAdapter
     private readonly string _lang;
     private readonly bool _useMock;
     private readonly MockAdapter _mock;
+    private readonly int _timeoutSeconds;
 
     private static readonly object _engineLock = new();
     private static bool _engineInitialized = false;
@@ -36,6 +37,7 @@ public class NintendoAdapter
         _tz = config["NINTENDO_TIMEZONE"] ?? "Europe/Berlin";
         _lang = config["NINTENDO_LANG"] ?? "de-DE";
         _useMock = (config["USE_MOCK_ADAPTERS"] ?? "false").ToLower() == "true";
+        _timeoutSeconds = ParseTimeoutSeconds(config["NINTENDO_TIMEOUT_SECONDS"]);
 
         EnsureEngineInitialized();
     }
@@ -74,11 +76,11 @@ public class NintendoAdapter
     public async Task<bool> SwitchFreigeben(int minutes, Dictionary<string, string?> cfg)
     {
         if (_useMock) return _mock.SwitchFreigeben(minutes);
-        var (token, tz, lang) = GetCfg(cfg);
+        var (token, tz, lang, timeoutSeconds) = GetCfg(cfg);
         if (string.IsNullOrEmpty(token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
         if (!_engineAvailable) { _log.LogWarning("Nintendo: Python.NET nicht verfügbar"); return false; }
 
-        return await Task.Run(() => CallBridge("switch_freigeben_sync", token, tz, lang, minutes));
+        return await Task.Run(() => CallBridge("switch_freigeben_sync", token, tz, lang, timeoutSeconds, minutes));
     }
 
     /// <summary>Lock Switch by setting daily limit to 0.</summary>
@@ -90,28 +92,38 @@ public class NintendoAdapter
     public async Task<bool> SwitchSperren(Dictionary<string, string?> cfg)
     {
         if (_useMock) return _mock.SwitchSperren();
-        var (token, tz, lang) = GetCfg(cfg);
+        var (token, tz, lang, timeoutSeconds) = GetCfg(cfg);
         if (string.IsNullOrEmpty(token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
         if (!_engineAvailable) { _log.LogWarning("Nintendo: Python.NET nicht verfügbar"); return false; }
 
-        return await Task.Run(() => CallBridge("switch_sperren_sync", token, tz, lang));
+        return await Task.Run(() => CallBridge("switch_sperren_sync", token, tz, lang, timeoutSeconds));
     }
 
     // ── Python.NET call ───────────────────────────────────────────────────
 
-    private (string token, string tz, string lang) GetCfg(Dictionary<string, string?> cfg)
+    private (string token, string tz, string lang, int timeoutSeconds) GetCfg(Dictionary<string, string?> cfg)
     {
         string Get(string key, string fallback) =>
             (cfg.GetValueOrDefault(key) ?? fallback).Trim();
 
+        var timeoutRaw = Get("timeout_seconds", _timeoutSeconds.ToString());
+
         return (
             Get("token", _token),
             Get("timezone", _tz),
-            Get("lang", _lang)
+            Get("lang", _lang),
+            ParseTimeoutSeconds(timeoutRaw)
         );
     }
 
-    private bool CallBridge(string funcName, string token, string tz, string lang, int? minutes = null)
+    private static int ParseTimeoutSeconds(string? raw)
+    {
+        if (int.TryParse(raw, out var parsed))
+            return Math.Clamp(parsed, 5, 120);
+        return 20;
+    }
+
+    private bool CallBridge(string funcName, string token, string tz, string lang, int timeoutSeconds, int? minutes = null)
     {
         try
         {
@@ -132,11 +144,11 @@ public class NintendoAdapter
 
                 bool result;
                 if (funcName == "switch_freigeben_sync" && minutes.HasValue)
-                    result = (bool)bridge.switch_freigeben_sync(token, tz, lang, minutes.Value);
+                    result = (bool)bridge.switch_freigeben_sync(token, tz, lang, minutes.Value, timeoutSeconds);
                 else
-                    result = (bool)bridge.switch_sperren_sync(token, tz, lang);
+                    result = (bool)bridge.switch_sperren_sync(token, tz, lang, timeoutSeconds);
 
-                _log.LogInformation("Nintendo: {Func} → {Result}", funcName, result);
+                _log.LogInformation("Nintendo: {Func} (timeout={Timeout}s) → {Result}", funcName, timeoutSeconds, result);
                 return result;
             }
         }
