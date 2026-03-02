@@ -134,3 +134,21 @@ public class DeviceUpdateRequest
     public Dictionary<string, string?>? Config { get; set; }
     public bool? IsActive { get; set; }
 }
+
+
+public class DeviceImportItem
+{
+    public string Name { get; set; } = "";
+    public string Identifier { get; set; } = "";
+    public string DeviceType { get; set; } = "tv";
+    public string ControlType { get; set; } = "fritzbox";
+    public Dictionary<string, string?> Config { get; set; } = new();
+    public bool IsActive { get; set; } = true;
+}
+
+public class DeviceImportRequest
+{
+    public List<DeviceImportItem> Devices { get; set; } = new();
+    public bool ReplaceExisting { get; set; } = false;
+}
+

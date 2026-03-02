@@ -120,3 +120,9 @@ export const setChildIcon = (childId, icon, token) =>
     token,
     body: JSON.stringify({ icon }),
   })
+
+export const adminExportDevices = (token) =>
+  request('/admin/devices/export', { token })
+
+export const adminImportDevices = (data, token) =>
+  request('/admin/devices/import', { method: 'POST', token, body: JSON.stringify(data) })

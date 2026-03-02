@@ -370,6 +370,93 @@ public class AdminController : ControllerBase
         return Ok(rows);
     }
 
+
+    [HttpGet("devices/export")]
+    [Authorize]
+    public async Task<IActionResult> ExportDevices()
+    {
+        if (!IsAdmin()) return Forbid();
+        await using var conn = _db.CreateConnection();
+
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT name, device_type, control_type, identifier, config, is_active FROM devices ORDER BY id";
+        var devices = new List<DeviceImportItem>();
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+        {
+            var configJson = r.IsDBNull(4) ? "{}" : r.GetString(4);
+            var config = JsonSerializer.Deserialize<Dictionary<string, string?>>(configJson) ?? new();
+            devices.Add(new DeviceImportItem
+            {
+                Name = r.IsDBNull(0) ? "" : r.GetString(0),
+                DeviceType = r.IsDBNull(1) ? "tv" : r.GetString(1),
+                ControlType = r.IsDBNull(2) ? "none" : r.GetString(2),
+                Identifier = r.IsDBNull(3) ? "" : r.GetString(3),
+                Config = config,
+                IsActive = !r.IsDBNull(5) && r.GetInt64(5) == 1,
+            });
+        }
+
+        return Ok(new
+        {
+            exported_at = DateTime.UtcNow.ToString("o"),
+            version = 1,
+            devices
+        });
+    }
+
+    [HttpPost("devices/import")]
+    [Authorize]
+    public async Task<IActionResult> ImportDevices([FromBody] DeviceImportRequest body)
+    {
+        if (!IsAdmin()) return Forbid();
+        if (body.Devices is null || body.Devices.Count == 0)
+            return BadRequest(new { detail = "Keine Geräte zum Importieren" });
+
+        foreach (var d in body.Devices)
+        {
+            if (!AllowedDeviceTypes.Contains(d.DeviceType))
+                return BadRequest(new { detail = $"Unbekannter Typ: {d.DeviceType}" });
+            if (!AllowedControlTypes.Contains(d.ControlType))
+                return BadRequest(new { detail = $"Unbekannter Steuertyp: {d.ControlType}" });
+        }
+
+        await using var conn = _db.CreateConnection();
+        await using var tx = await conn.BeginTransactionAsync();
+        try
+        {
+            if (body.ReplaceExisting)
+            {
+                await using var del = conn.CreateCommand();
+                del.Transaction = (SqliteTransaction)tx;
+                del.CommandText = "DELETE FROM devices";
+                await del.ExecuteNonQueryAsync();
+            }
+
+            foreach (var d in body.Devices)
+            {
+                await using var ins = conn.CreateCommand();
+                ins.Transaction = (SqliteTransaction)tx;
+                ins.CommandText = "INSERT INTO devices (name, device_type, control_type, identifier, config, is_active) VALUES (@n,@dt,@ct,@id,@cfg,@active)";
+                ins.Parameters.AddWithValue("@n", d.Name);
+                ins.Parameters.AddWithValue("@dt", d.DeviceType);
+                ins.Parameters.AddWithValue("@ct", d.ControlType);
+                ins.Parameters.AddWithValue("@id", d.Identifier);
+                ins.Parameters.AddWithValue("@cfg", JsonSerializer.Serialize(d.Config ?? new Dictionary<string, string?>()));
+                ins.Parameters.AddWithValue("@active", d.IsActive ? 1 : 0);
+                await ins.ExecuteNonQueryAsync();
+            }
+
+            await tx.CommitAsync();
+            return Ok(new { ok = true, imported = body.Devices.Count, replaced = body.ReplaceExisting });
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
     [HttpPost("devices")]
     [Authorize]
     public async Task<IActionResult> CreateDevice([FromBody] DeviceCreateRequest body)

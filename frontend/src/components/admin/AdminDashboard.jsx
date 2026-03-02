@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   adminGetChildren, adminGetSessions, adminGetCoinLog,
   adminCancelSession, adminDeleteChild, adminAdjustCoins, adminAdjustPocketMoney,
   adminCreateChild, adminUpdateChild, adminGetMockStatus, adminGetPocketMoneyLog,
-  adminGetDevices, adminCreateDevice, adminUpdateDevice, adminDeleteDevice
+  adminGetDevices, adminCreateDevice, adminUpdateDevice, adminDeleteDevice, adminExportDevices, adminImportDevices
 } from '../../api.js'
 import ChildForm from './ChildForm.jsx'
 import DeviceForm from './DeviceForm.jsx'
@@ -47,6 +47,7 @@ export default function AdminDashboard({ token, onLogout }) {
   const [coinLogChild, setCoinLogChild] = useState(null)
   const [devices, setDevices] = useState([])
   const [editDevice, setEditDevice] = useState(null) // null | 'new' | device object
+  const importFileRef = useRef(null)
 
   const handleError = (e) => {
     if (e.status === 401) { onLogout(); return }
@@ -409,6 +410,56 @@ export default function AdminDashboard({ token, onLogout }) {
             >
               + Gerät hinzufügen
             </button>
+            <button
+              onClick={async () => {
+                try {
+                  const payload = await adminExportDevices(token)
+                  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `muenzbox-devices-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                } catch (e) {
+                  if (e.status === 401) { onLogout(); return }
+                  alert(e.message)
+                }
+              }}
+              className="w-full py-2 bg-blue-700 hover:bg-blue-600 text-white font-bold rounded-2xl active:scale-95"
+            >
+              ⬇ Geräte exportieren
+            </button>
+            <button
+              onClick={() => importFileRef.current?.click()}
+              className="w-full py-2 bg-indigo-700 hover:bg-indigo-600 text-white font-bold rounded-2xl active:scale-95"
+            >
+              ⬆ Geräte importieren
+            </button>
+            <input
+              ref={importFileRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (!file) return
+                try {
+                  const text = await file.text()
+                  const json = JSON.parse(text)
+                  const devices = Array.isArray(json) ? json : (json.devices ?? [])
+                  if (!Array.isArray(devices) || devices.length === 0) throw new Error('Keine Geräte im JSON gefunden')
+                  const replaceExisting = confirm('Vorhandene Geräte ersetzen? OK = ersetzen, Abbrechen = hinzufügen')
+                  await adminImportDevices({ devices, replace_existing: replaceExisting }, token)
+                  await loadData()
+                  alert('Geräte importiert')
+                } catch (err) {
+                  const msg = err?.message || 'Import fehlgeschlagen'
+                  alert(msg)
+                }
+              }}
+            />
             <button onClick={loadData} className="text-gray-400 hover:text-white text-sm font-bold text-right mb-2">
               ↻ Aktualisieren
             </button>

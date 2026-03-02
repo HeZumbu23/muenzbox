@@ -62,15 +62,19 @@ public class MikrotikAdapter
         return (host, user, pass);
     }
 
+    private static bool HasExplicitScheme(string host) =>
+        host.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+        host.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
     private static List<string> BaseUrls(string host)
     {
         if (string.IsNullOrEmpty(host)) return new();
-        if (host.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            host.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (HasExplicitScheme(host))
             return new() { host.TrimEnd('/') };
 
         var clean = host.TrimEnd('/');
-        return new() { $"https://{clean}", $"http://{clean}" };
+        // Prefer HTTP first for RouterOS REST defaults (many setups have no TLS on LAN)
+        return new() { $"http://{clean}", $"https://{clean}" };
     }
 
     private async Task<string?> GetEntryId(string host, string user, string pass, string identifier)
@@ -112,7 +116,12 @@ public class MikrotikAdapter
                 _log.LogWarning("MikroTik: Kein Eintrag mit identifier={Id}", identifier);
                 return null;
             }
-            catch (HttpRequestException) { continue; }
+            catch (HttpRequestException ex)
+            {
+                _log.LogWarning("MikroTik: Verbindungsfehler bei {Url} ({Id}) – {Msg}", baseUrl, identifier, ex.Message);
+                if (HasExplicitScheme(host)) return null;
+                continue;
+            }
             catch (Exception ex) { _log.LogError(ex, "MikroTik: Fehler beim Laden der Address-List"); return null; }
         }
 
@@ -158,10 +167,15 @@ public class MikrotikAdapter
                     disabled == "true" ? "freigegeben" : "gesperrt", identifier);
                 return true;
             }
-            catch (HttpRequestException) { continue; }
+            catch (HttpRequestException ex)
+            {
+                _log.LogError("MikroTik: Patch fehlgeschlagen bei {Url} ({Id}) – {Msg}", baseUrl, identifier, ex.Message);
+                if (HasExplicitScheme(host)) return false;
+                continue;
+            }
             catch (Exception ex) { _log.LogError(ex, "MikroTik: Patch-Fehler"); return false; }
         }
-        _log.LogError("MikroTik: Keine Verbindung zu {Host}", host);
+        _log.LogError("MikroTik: Keine Verbindung zu {Host}. Tipp: Host inkl. Schema setzen (z. B. http://192.168.88.1)", host);
         return false;
     }
 
