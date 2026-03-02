@@ -23,6 +23,7 @@ public class NintendoAdapter
     private static readonly object _engineLock = new();
     private static bool _engineInitialized = false;
     private static bool _engineAvailable = false;
+    private static IntPtr _threadState = IntPtr.Zero;
 
     public NintendoAdapter(
         ILogger<NintendoAdapter> log,
@@ -49,12 +50,13 @@ public class NintendoAdapter
             {
                 // Allow override via environment variable PYTHONNET_PYDLL
                 PythonEngine.Initialize();
+                _threadState = PythonEngine.BeginAllowThreads();
                 _engineAvailable = true;
             }
             catch (Exception ex)
             {
                 // Python not available – Nintendo integration disabled
-                Console.Error.WriteLine($"[NintendoAdapter] Python.NET init failed: {ex.Message}");
+                Console.Error.WriteLine($"[NintendoAdapter] Python.NET init failed (GIL setup): {ex.Message}");
                 _engineAvailable = false;
             }
         }
@@ -113,6 +115,7 @@ public class NintendoAdapter
     {
         try
         {
+            // GIL must be acquired per call after Initialize()+BeginAllowThreads()
             using (Py.GIL())
             {
                 dynamic sys = Py.Import("sys");
