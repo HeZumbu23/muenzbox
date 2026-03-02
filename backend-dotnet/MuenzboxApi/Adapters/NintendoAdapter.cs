@@ -66,26 +66,50 @@ public class NintendoAdapter
     /// <summary>Unlock Switch for <paramref name="minutes"/> minutes.</summary>
     public async Task<bool> SwitchFreigeben(int minutes)
     {
+        return await SwitchFreigeben(minutes, new Dictionary<string, string?>());
+    }
+
+    public async Task<bool> SwitchFreigeben(int minutes, Dictionary<string, string?> cfg)
+    {
         if (_useMock) return _mock.SwitchFreigeben(minutes);
-        if (string.IsNullOrEmpty(_token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
+        var (token, tz, lang) = GetCfg(cfg);
+        if (string.IsNullOrEmpty(token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
         if (!_engineAvailable) { _log.LogWarning("Nintendo: Python.NET nicht verfügbar"); return false; }
 
-        return await Task.Run(() => CallBridge("switch_freigeben_sync", minutes));
+        return await Task.Run(() => CallBridge("switch_freigeben_sync", token, tz, lang, minutes));
     }
 
     /// <summary>Lock Switch by setting daily limit to 0.</summary>
     public async Task<bool> SwitchSperren()
     {
+        return await SwitchSperren(new Dictionary<string, string?>());
+    }
+
+    public async Task<bool> SwitchSperren(Dictionary<string, string?> cfg)
+    {
         if (_useMock) return _mock.SwitchSperren();
-        if (string.IsNullOrEmpty(_token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
+        var (token, tz, lang) = GetCfg(cfg);
+        if (string.IsNullOrEmpty(token)) { _log.LogWarning("Nintendo: Token nicht konfiguriert"); return false; }
         if (!_engineAvailable) { _log.LogWarning("Nintendo: Python.NET nicht verfügbar"); return false; }
 
-        return await Task.Run(() => CallBridge("switch_sperren_sync"));
+        return await Task.Run(() => CallBridge("switch_sperren_sync", token, tz, lang));
     }
 
     // ── Python.NET call ───────────────────────────────────────────────────
 
-    private bool CallBridge(string funcName, int? minutes = null)
+    private (string token, string tz, string lang) GetCfg(Dictionary<string, string?> cfg)
+    {
+        string Get(string key, string fallback) =>
+            (cfg.GetValueOrDefault(key) ?? fallback).Trim();
+
+        return (
+            Get("token", _token),
+            Get("timezone", _tz),
+            Get("lang", _lang)
+        );
+    }
+
+    private bool CallBridge(string funcName, string token, string tz, string lang, int? minutes = null)
     {
         try
         {
@@ -105,9 +129,9 @@ public class NintendoAdapter
 
                 bool result;
                 if (funcName == "switch_freigeben_sync" && minutes.HasValue)
-                    result = (bool)bridge.switch_freigeben_sync(_token, _tz, _lang, minutes.Value);
+                    result = (bool)bridge.switch_freigeben_sync(token, tz, lang, minutes.Value);
                 else
-                    result = (bool)bridge.switch_sperren_sync(_token, _tz, _lang);
+                    result = (bool)bridge.switch_sperren_sync(token, tz, lang);
 
                 _log.LogInformation("Nintendo: {Func} → {Result}", funcName, result);
                 return result;

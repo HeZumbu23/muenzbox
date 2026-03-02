@@ -175,7 +175,8 @@ public class SchedulerService : BackgroundService
             else if (type == "switch")
             {
                 var nintendo = _sp.GetRequiredService<NintendoAdapter>();
-                await nintendo.SwitchSperren();
+                var dev = await GetDeviceAsync(conn, "switch", "nintendo", "Nintendo Switch");
+                await nintendo.SwitchSperren(dev.Config);
             }
         }
     }
@@ -197,22 +198,27 @@ public class SchedulerService : BackgroundService
         await cmd.ExecuteNonQueryAsync();
     }
 
+    private static Task<(string ControlType, string Identifier, Dictionary<string, string?> Config)>
+        GetTvDeviceAsync(Microsoft.Data.Sqlite.SqliteConnection conn) =>
+        GetDeviceAsync(conn, "tv", "fritzbox", "Fernseher");
+
     private static async Task<(string ControlType, string Identifier, Dictionary<string, string?> Config)>
-        GetTvDeviceAsync(Microsoft.Data.Sqlite.SqliteConnection conn)
+        GetDeviceAsync(Microsoft.Data.Sqlite.SqliteConnection conn, string deviceType, string fallbackControlType, string fallbackIdentifier)
     {
         await using var cmd = conn.CreateCommand();
         cmd.CommandText =
-            "SELECT identifier, control_type, config FROM devices WHERE device_type='tv' AND is_active=1 LIMIT 1";
+            "SELECT identifier, control_type, config FROM devices WHERE device_type=@dt AND is_active=1 LIMIT 1";
+        cmd.Parameters.AddWithValue("@dt", deviceType);
         await using var r = await cmd.ExecuteReaderAsync();
         if (await r.ReadAsync())
         {
-            var identifier = r.IsDBNull(0) ? "Fernseher" : r.GetString(0);
-            var controlType = r.IsDBNull(1) ? "fritzbox" : r.GetString(1);
+            var identifier = r.IsDBNull(0) ? fallbackIdentifier : r.GetString(0);
+            var controlType = r.IsDBNull(1) ? fallbackControlType : r.GetString(1);
             var configJson = r.IsDBNull(2) ? "{}" : r.GetString(2);
             var config = System.Text.Json.JsonSerializer
                 .Deserialize<Dictionary<string, string?>>(configJson) ?? new();
             return (controlType, identifier, config);
         }
-        return ("fritzbox", "Fernseher", new());
+        return (fallbackControlType, fallbackIdentifier, new());
     }
 }

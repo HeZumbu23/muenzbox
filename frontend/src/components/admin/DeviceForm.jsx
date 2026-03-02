@@ -2,11 +2,13 @@ import { useState } from 'react'
 
 const DEVICE_TYPE_OPTIONS = [
   { value: 'tv', label: '📺 Fernseher' },
+  { value: 'switch', label: '🎮 Nintendo Switch' },
 ]
 
 const CONTROL_TYPE_OPTIONS = [
   { value: 'fritzbox', label: '🌐 Fritz!Box' },
   { value: 'mikrotik', label: '⚙️ MikroTik' },
+  { value: 'nintendo', label: '🎮 Nintendo Parental Controls' },
   { value: 'schedule_only', label: '🕐 Nur Zeitplan (keine Hardware)' },
   { value: 'none', label: '— Keine Steuerung' },
 ]
@@ -49,6 +51,11 @@ export default function DeviceForm({ device, onSave, onClose }) {
   const updateCfg = (key, val) => setForm((f) => ({ ...f, config: { ...f.config, [key]: val } }))
   const cfg = form.config
 
+  const controlTypeOptions = CONTROL_TYPE_OPTIONS.filter((opt) => {
+    if (form.device_type === "switch") return ['nintendo', 'schedule_only', 'none'].includes(opt.value)
+    return ['fritzbox', 'mikrotik', 'schedule_only', 'none'].includes(opt.value)
+  })
+
   const handleSave = async () => {
     if (!form.name.trim()) { alert('Anzeigename erforderlich'); return }
     if (!form.identifier.trim()) { alert('Netzwerkname des Geräts erforderlich'); return }
@@ -80,7 +87,12 @@ export default function DeviceForm({ device, onSave, onClose }) {
           <Field label="Münztyp">
             <select
               value={form.device_type}
-              onChange={(e) => update('device_type', e.target.value)}
+              onChange={(e) => {
+                const newType = e.target.value
+                update('device_type', newType)
+                if (newType === 'switch' && ['fritzbox', 'mikrotik'].includes(form.control_type)) update('control_type', 'nintendo')
+                if (newType === 'tv' && form.control_type === 'nintendo') update('control_type', 'fritzbox')
+              }}
               className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
             >
               {DEVICE_TYPE_OPTIONS.map((opt) => (
@@ -105,7 +117,7 @@ export default function DeviceForm({ device, onSave, onClose }) {
                 }}
                 className="bg-gray-700 text-white rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-yellow-400"
               >
-                {CONTROL_TYPE_OPTIONS.map((opt) => (
+                {controlTypeOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
@@ -162,6 +174,30 @@ export default function DeviceForm({ device, onSave, onClose }) {
 
               <Field label="Address-List Kommentar" hint="comment-Feld des Eintrags in der Firewall Address-List">
                 <Input value={form.identifier} onChange={(v) => update('identifier', v)} placeholder="Fernseher" />
+              </Field>
+            </div>
+          )}
+
+
+          {/* Nintendo Konfiguration */}
+          {form.control_type === 'nintendo' && (
+            <div className="flex flex-col gap-3 bg-gray-800 rounded-2xl p-4">
+              <p className="text-yellow-400 text-xs font-bold uppercase tracking-wider">🎮 Nintendo Zugangsdaten</p>
+
+              <Field label="Parental-Control-Token" hint="Token aus Nintendo App/Bridge">
+                <Input value={cfg.token ?? ''} onChange={(v) => updateCfg('token', v)} placeholder="your_token_here" />
+              </Field>
+
+              <Field label="Zeitzone" hint="Optional, Standard: Europe/Berlin">
+                <Input value={cfg.timezone ?? ''} onChange={(v) => updateCfg('timezone', v)} placeholder="Europe/Berlin" />
+              </Field>
+
+              <Field label="Sprache" hint="Optional, Standard: de-DE">
+                <Input value={cfg.lang ?? ''} onChange={(v) => updateCfg('lang', v)} placeholder="de-DE" />
+              </Field>
+
+              <Field label="Gerätename" hint="Nur für Anzeige/Zuordnung">
+                <Input value={form.identifier} onChange={(v) => update('identifier', v)} placeholder="Nintendo Switch" />
               </Field>
             </div>
           )}
