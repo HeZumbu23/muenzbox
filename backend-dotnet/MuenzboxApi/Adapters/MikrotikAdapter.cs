@@ -161,7 +161,10 @@ public class MikrotikAdapter
                 using var client = CreateClient(user, pass);
                 var resp = await client.PatchAsJsonAsync(
                     $"{baseUrl}/rest/ip/firewall/address-list/{entryId}",
-                    new { disabled });
+                    new Dictionary<string, string>
+                    {
+                        ["disabled"] = disabled ? "true" : "false"
+                    });
 
                 if (!resp.IsSuccessStatusCode)
                 {
@@ -173,8 +176,8 @@ public class MikrotikAdapter
                         $"{baseUrl}/rest/ip/firewall/address-list/set",
                         new Dictionary<string, string>
                         {
-                            [".id"] = entryId,
-                            ["disabled"] = disabled ? "yes" : "no"
+                            ["=.id="] = entryId,
+                            ["=disabled="] = disabled ? "yes" : "no"
                         });
 
                     if (!fallbackResp.IsSuccessStatusCode)
