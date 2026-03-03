@@ -94,7 +94,7 @@ function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
   )
 }
 
-export default function CoinOverview({ childId, token, onSessionStart, onLogout }) {
+export default function CoinOverview({ childId, token, onSessionStart, onLogout, onError }) {
   const [status, setStatus] = useState(null)
   const [activeSession, setActiveSession] = useState(null)
   const [error, setError] = useState('')
@@ -108,8 +108,10 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
       ])
       setStatus(st)
       setActiveSession(sess)
+      onError?.('')
     } catch (e) {
       setError(e.message)
+      onError?.(e.message || 'Status konnte nicht geladen werden.')
     }
   }
 
@@ -227,6 +229,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout 
                       setShowIconPicker(false)
                     } catch (e) {
                       setError(e.message)
+                      onError?.(e.message || 'Icon konnte nicht gespeichert werden.')
                     }
                   }}
                   className="text-3xl bg-gray-100 hover:bg-gray-200 rounded-xl p-2"
