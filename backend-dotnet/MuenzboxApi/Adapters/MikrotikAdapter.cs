@@ -159,34 +159,25 @@ public class MikrotikAdapter
             try
             {
                 using var client = CreateClient(user, pass);
-                var resp = await client.PatchAsJsonAsync(
-                    $"{baseUrl}/rest/ip/firewall/address-list/{entryId}",
-                    new Dictionary<string, string>
-                    {
-                        ["disabled"] = disabled ? "true" : "false"
-                    });
+                var url = $"{baseUrl}/rest/ip/firewall/address-list/{entryId}";
+                var json = JsonSerializer.Serialize(new Dictionary<string, string>
+                {
+                    ["disabled"] = disabled ? "true" : "false"
+                });
+                var request = new HttpRequestMessage(HttpMethod.Patch, url)
+                {
+                    Content = new StringContent(json, Encoding.UTF8)
+                };
+                // Exact Content-Type without charset suffix for MikroTik REST compatibility
+                request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
+                var resp = await client.SendAsync(request);
                 if (!resp.IsSuccessStatusCode)
                 {
                     var body = await resp.Content.ReadAsStringAsync();
-                    _log.LogWarning("MikroTik: PATCH fehlgeschlagen bei {Url} ({Id}) – Status {Status}, Body: {Body}",
-                        baseUrl, identifier, (int)resp.StatusCode, body);
-
-                    var fallbackResp = await client.PostAsJsonAsync(
-                        $"{baseUrl}/rest/ip/firewall/address-list/set",
-                        new Dictionary<string, string>
-                        {
-                            ["=.id="] = entryId,
-                            ["=disabled="] = disabled ? "yes" : "no"
-                        });
-
-                    if (!fallbackResp.IsSuccessStatusCode)
-                    {
-                        var fallbackBody = await fallbackResp.Content.ReadAsStringAsync();
-                        _log.LogWarning("MikroTik: SET-Fallback fehlgeschlagen bei {Url} ({Id}) – Status {Status}, Body: {Body}",
-                            baseUrl, identifier, (int)fallbackResp.StatusCode, fallbackBody);
-                        fallbackResp.EnsureSuccessStatusCode();
-                    }
+                    _log.LogError("MikroTik: PATCH fehlgeschlagen für {Id} bei {Url} – Status {Status}, Body: {Body}",
+                        identifier, url, (int)resp.StatusCode, body);
+                    return false;
                 }
 
                 _log.LogInformation("MikroTik: TV {Action} ({Id})",
@@ -208,7 +199,12 @@ public class MikrotikAdapter
     private static HttpClient CreateClient(string user, string pass)
     {
         var handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (_, _, _, _) => true };
-        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
+        var client = new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(10),
+            DefaultRequestVersion = HttpVersion.Version11,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+        };
         var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user}:{pass}"));
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
         return client;
