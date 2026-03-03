@@ -3,6 +3,80 @@ import { getChildStatus, getActiveSession, setChildIcon } from '../api.js'
 
 const ANIMAL_ICONS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵']
 
+function formatTimeShort(seconds) {
+  if (seconds <= 0) return '0:00'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function SessionBanner({ session, onClick }) {
+  const [remaining, setRemaining] = useState(0)
+
+  useEffect(() => {
+    const calc = () => {
+      const endsAt = new Date(session.ends_at)
+      return Math.max(0, Math.floor((endsAt - new Date()) / 1000))
+    }
+    setRemaining(calc())
+    const interval = setInterval(() => setRemaining(calc()), 1000)
+    return () => clearInterval(interval)
+  }, [session.ends_at])
+
+  const totalSeconds = session.coins_used * 30 * 60
+  const progress = Math.max(0, Math.min(1, remaining / totalSeconds))
+  const r = 33
+  const circumference = 2 * Math.PI * r
+  const strokeColor = remaining < 60 ? '#f87171' : remaining < 300 ? '#facc15' : '#4ade80'
+  const timeColor = remaining < 60 ? 'text-red-400' : remaining < 300 ? 'text-yellow-300' : 'text-green-400'
+
+  const endsAt = new Date(session.ends_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  const minuteNow = Math.min(session.coins_used * 30, Math.floor((totalSeconds - remaining) / 60) + 1)
+  const totalMinutes = session.coins_used * 30
+
+  return (
+    <div className="bg-green-400/30 border-2 border-green-400/50 rounded-3xl p-4">
+      <div className="flex items-center gap-4">
+        <div className="flex-1">
+          <p className="text-white font-extrabold text-xl">
+            {session.type === 'switch' ? '🎮 Switch' : '📺 TV'} läuft
+          </p>
+          <p className="text-white/70 text-sm font-bold mt-1">
+            Minute {minuteNow} von {totalMinutes}
+          </p>
+          <p className="text-white/70 text-sm font-bold">
+            bis {endsAt} Uhr
+          </p>
+        </div>
+        <div className="relative flex-shrink-0 flex items-center justify-center">
+          <svg width="80" height="80" className="-rotate-90">
+            <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="7" />
+            <circle
+              cx="40" cy="40" r={r}
+              fill="none" stroke={strokeColor} strokeWidth="7"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - progress)}
+              style={{ transition: 'stroke-dashoffset 1s linear, stroke 1s' }}
+            />
+          </svg>
+          <p className={`absolute text-xs font-black leading-none ${timeColor}`}>
+            {formatTimeShort(remaining)}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={onClick}
+        className="mt-3 w-full text-center text-yellow-300 font-bold underline"
+      >
+        Zur laufenden Session →
+      </button>
+    </div>
+  )
+}
+
 function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
   const [showSelect, setShowSelect] = useState(false)
   const [selected, setSelected] = useState(1)
@@ -169,17 +243,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout,
         )}
 
         {hasActiveSession && (
-          <div className="bg-green-400/30 border-2 border-green-400/50 rounded-3xl p-4 text-center">
-            <p className="text-white font-extrabold text-xl">
-              Session läuft: {activeSession.type === 'switch' ? '🎮 Switch' : '📺 TV'}
-            </p>
-            <button
-              onClick={() => onSessionStart(activeSession)}
-              className="mt-2 text-yellow-300 font-bold underline"
-            >
-              Zur laufenden Session →
-            </button>
-          </div>
+          <SessionBanner session={activeSession} onClick={() => onSessionStart(activeSession)} />
         )}
 
         {/* Time window info */}

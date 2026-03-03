@@ -10,20 +10,17 @@ RUN dotnet publish MuenzboxApi/MuenzboxApi.csproj \
     -c Release -o /app/publish \
     --no-restore
 
-# ── Stage 2: Python 3.12 base + .NET 9 runtime + Python packages ──────────
+# ── Stage 2: .NET 9 runtime (official image, avoids apt repo issues) ───────
+FROM mcr.microsoft.com/dotnet/runtime:9.0 AS dotnet-runtime
+
+# ── Stage 3: Python 3.12 base + .NET 9 runtime + Python packages ──────────
 # python:3.12 is Debian Bookworm; compiled with --enable-shared so
 # libpython3.12.so.1.0 is available for Python.NET.
 FROM python:3.12 AS final
 
-# Install .NET 9 runtime from Microsoft packages
-RUN apt-get update && apt-get install -y --no-install-recommends wget && \
-    wget -q https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
-         -O /tmp/packages-microsoft-prod.deb && \
-    dpkg -i /tmp/packages-microsoft-prod.deb && \
-    rm /tmp/packages-microsoft-prod.deb && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends dotnet-runtime-9.0 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Copy .NET runtime directly from the official image (no apt/wget needed)
+COPY --from=dotnet-runtime /usr/share/dotnet /usr/share/dotnet
+RUN ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
 
 # Install Python packages required by the Nintendo bridge
 RUN pip install --no-cache-dir pynintendoparental aiohttp
