@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [prod]
   workflow_dispatch:
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: ./backend-dotnet
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/muenzbox-backend:latest

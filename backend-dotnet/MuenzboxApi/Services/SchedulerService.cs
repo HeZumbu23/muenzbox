@@ -21,6 +21,46 @@ public class SchedulerService : BackgroundService
         _log = log;
     }
 
+    public override async Task StartAsync(CancellationToken ct)
+    {
+        await StartupSafetyCheckAsync();
+        await base.StartAsync(ct);
+    }
+
+    private async Task StartupSafetyCheckAsync()
+    {
+        try
+        {
+            // Expire sessions that ended while the app was down
+            await ExpireSessionsAsync();
+
+            // Lock TV if no active session remains
+            var db = _sp.GetRequiredService<DatabaseService>();
+            var dispatcher = _sp.GetRequiredService<AdapterDispatcher>();
+            await using var conn = db.CreateConnection();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM sessions WHERE type='tv' AND status='active'";
+            var count = (long)(await cmd.ExecuteScalarAsync() ?? 0L);
+
+            if (count == 0)
+            {
+                var dev = await GetTvDeviceAsync(conn);
+                var ok = await dispatcher.TvSperren(dev.ControlType, dev.Identifier, dev.Config);
+                _log.LogInformation("Startup: TV gesperrt (keine aktive Session) – {Result}",
+                    ok ? "OK" : "fehlgeschlagen");
+            }
+            else
+            {
+                _log.LogInformation("Startup: Aktive TV-Session vorhanden, TV bleibt freigegeben");
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Startup: Fehler beim Hardware-Sicherheitscheck");
+        }
+    }
+
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         _log.LogInformation("Scheduler started");
