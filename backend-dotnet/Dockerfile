@@ -10,8 +10,8 @@ RUN dotnet publish MuenzboxApi/MuenzboxApi.csproj \
     -c Release -o /app/publish \
     --no-restore
 
-# ── Stage 2: .NET 9 runtime (official image, avoids apt repo issues) ───────
-FROM mcr.microsoft.com/dotnet/runtime:9.0 AS dotnet-runtime
+# ── Stage 2: ASP.NET Core 9 runtime (includes Microsoft.AspNetCore.App) ────
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS dotnet-runtime
 
 # ── Stage 3: Python 3.12 base + .NET 9 runtime + Python packages ──────────
 # python:3.12 is Debian Bookworm; compiled with --enable-shared so
