@@ -64,6 +64,23 @@ public class AdminVerifyRequest
     public string Pin { get; set; } = "";
 }
 
+public class AdminPinSetupRequest
+{
+    public string Pin { get; set; } = "";
+}
+
+public class AdminPinChangeRequest
+{
+    public string CurrentPin { get; set; } = "";
+    public string NewPin { get; set; } = "";
+}
+
+public class ChildPinChangeRequest
+{
+    public string CurrentPin { get; set; } = "";
+    public string NewPin { get; set; } = "";
+}
+
 // ── Create child ──────────────────────────────────────────────────────────
 public class ChildCreateRequest
 {
@@ -151,4 +168,3 @@ public class DeviceImportRequest
     public List<DeviceImportItem> Devices { get; set; } = new();
     public bool ReplaceExisting { get; set; } = false;
 }
-

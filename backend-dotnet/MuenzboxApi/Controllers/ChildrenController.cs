@@ -120,6 +120,41 @@ public class ChildrenController : ControllerBase
     }
 
 
+
+    // ── POST /api/children/{id}/change-pin ─────────────────────────────────
+
+    [HttpPost("children/{childId:int}/change-pin")]
+    [Authorize]
+    public async Task<IActionResult> ChangePin(int childId, [FromBody] ChildPinChangeRequest body)
+    {
+        if (!IsChildAuthorized(childId))
+            return Forbid();
+
+        var currentPin = (body.CurrentPin ?? "").Trim();
+        var newPin = (body.NewPin ?? "").Trim();
+        if (newPin.Length < 4)
+            return BadRequest(new { detail = "Neue PIN muss mindestens 4 Zeichen haben" });
+
+        await using var conn = _db.CreateConnection();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT pin_hash FROM children WHERE id=@id";
+        cmd.Parameters.AddWithValue("@id", childId);
+        var currentHash = (string?)await cmd.ExecuteScalarAsync();
+
+        if (string.IsNullOrWhiteSpace(currentHash))
+            return NotFound(new { detail = "Kind nicht gefunden" });
+        if (!_auth.VerifyPin(currentPin, currentHash))
+            return Unauthorized(new { detail = "Aktuelle PIN ist falsch" });
+
+        await using var upd = conn.CreateCommand();
+        upd.CommandText = "UPDATE children SET pin_hash=@pinHash WHERE id=@id";
+        upd.Parameters.AddWithValue("@pinHash", _auth.HashPin(newPin));
+        upd.Parameters.AddWithValue("@id", childId);
+        await upd.ExecuteNonQueryAsync();
+
+        return Ok(new { ok = true });
+    }
+
     // ── POST /api/children/{id}/icon ───────────────────────────────────────
 
     [HttpPost("children/{childId:int}/icon")]

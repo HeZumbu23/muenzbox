@@ -1,36 +1,92 @@
-import { useState } from 'react'
-import { adminVerify } from '../../api.js'
+import { useEffect, useState } from 'react'
+import { adminPinStatus, adminSetupPin, adminVerify } from '../../api.js'
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓']
 
 export default function AdminLogin({ onSuccess }) {
   const [pin, setPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [setupStep, setSetupStep] = useState('new')
+  const [isSetupMode, setIsSetupMode] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    adminPinStatus()
+      .then((res) => setIsSetupMode(!res.is_set))
+      .catch(() => setError('PIN-Status konnte nicht geladen werden.'))
+  }, [])
+
+  const activePin = isSetupMode ? (setupStep === 'new' ? pin : confirmPin) : pin
 
   const handleKey = async (key) => {
     if (loading) return
     setError('')
 
     if (key === '⌫') {
-      setPin((p) => p.slice(0, -1))
+      if (isSetupMode && setupStep === 'confirm') {
+        setConfirmPin((p) => p.slice(0, -1))
+      } else {
+        setPin((p) => p.slice(0, -1))
+      }
       return
     }
 
     if (key === '✓') {
-      if (pin.length < 4) {
-        setError('Bitte PIN eingeben')
-        return
+      if (isSetupMode) {
+        if (setupStep === 'new') {
+          if (pin.length < 4) {
+            setError('PIN muss mindestens 4 Stellen haben')
+            return
+          }
+          setSetupStep('confirm')
+          return
+        }
+
+        if (confirmPin.length < 4) {
+          setError('PIN bitte bestätigen')
+          return
+        }
+        if (pin !== confirmPin) {
+          setError('PINs stimmen nicht überein')
+          setConfirmPin('')
+          return
+        }
+
+        setLoading(true)
+        try {
+          await adminSetupPin(pin)
+          const res = await adminVerify(pin)
+          onSuccess(res.token)
+        } catch (e) {
+          setError(e.message || 'PIN konnte nicht gespeichert werden')
+        } finally {
+          setLoading(false)
+        }
+      } else {
+        if (pin.length < 4) {
+          setError('Bitte PIN eingeben')
+          return
+        }
+        setLoading(true)
+        try {
+          const res = await adminVerify(pin)
+          onSuccess(res.token)
+        } catch {
+          setError('Falsche Admin-PIN!')
+          setPin('')
+        } finally {
+          setLoading(false)
+        }
       }
-      setLoading(true)
-      try {
-        const res = await adminVerify(pin)
-        onSuccess(res.token)
-      } catch {
-        setError('Falsche Admin-PIN!')
-        setPin('')
-      } finally {
-        setLoading(false)
+      return
+    }
+
+    if (isSetupMode) {
+      if (setupStep === 'new') {
+        if (pin.length < 8) setPin((p) => p + key)
+      } else if (confirmPin.length < 8) {
+        setConfirmPin((p) => p + key)
       }
       return
     }
@@ -45,14 +101,21 @@ export default function AdminLogin({ onSuccess }) {
       </a>
 
       <h1 className="text-white text-4xl font-black mb-1">Eltern-Bereich</h1>
-      <p className="text-white/60 text-lg font-bold mb-8">Admin-PIN eingeben</p>
+      <p className="text-white/60 text-lg font-bold mb-2">
+        {isSetupMode ? 'Admin-PIN erstmalig einrichten' : 'Admin-PIN eingeben'}
+      </p>
+      {isSetupMode && (
+        <p className="text-white/40 text-sm font-bold mb-6">
+          Schritt: {setupStep === 'new' ? 'Neue PIN setzen' : 'PIN bestätigen'}
+        </p>
+      )}
 
       <div className="flex gap-4 mb-3">
-        {Array.from({ length: Math.max(4, pin.length) }).map((_, i) => (
+        {Array.from({ length: Math.max(4, activePin.length) }).map((_, i) => (
           <div
             key={i}
             className={`w-5 h-5 rounded-full border-2 border-white/40 transition-all ${
-              i < pin.length ? 'bg-yellow-400 border-yellow-400 scale-110' : 'bg-transparent'
+              i < activePin.length ? 'bg-yellow-400 border-yellow-400 scale-110' : 'bg-transparent'
             }`}
           />
         ))}

@@ -22,7 +22,6 @@ public class AdminController : ControllerBase
     private static readonly HashSet<string> AllowedDeviceTypes = new() { "tv", "nintendo", "switch" };
     private static readonly HashSet<string> AllowedControlTypes = new() { "fritzbox", "mikrotik", "nintendo", "schedule_only", "none" };
 
-    private readonly string _adminPin;
     private readonly bool _useMock;
 
     public AdminController(
@@ -31,7 +30,6 @@ public class AdminController : ControllerBase
         AdapterDispatcher adapters,
         NintendoAdapter nintendo,
         MockAdapter mock,
-        IConfiguration config,
         ILogger<AdminController> log)
     {
         _db = db;
@@ -40,16 +38,45 @@ public class AdminController : ControllerBase
         _nintendo = nintendo;
         _mock = mock;
         _log = log;
-        _adminPin = config["ADMIN_PIN"] ?? "1234";
-        _useMock = (config["USE_MOCK_ADAPTERS"] ?? "false").ToLower() == "true";
+        _useMock = (Environment.GetEnvironmentVariable("USE_MOCK_ADAPTERS") ?? "false").ToLower() == "true";
     }
 
     // ── POST /api/admin/verify ────────────────────────────────────────────
 
-    [HttpPost("verify")]
-    public IActionResult Verify([FromBody] AdminVerifyRequest body)
+    [HttpGet("pin-status")]
+    public async Task<IActionResult> PinStatus()
     {
-        if (body.Pin != _adminPin)
+        await using var conn = _db.CreateConnection();
+        var pin = await GetAdminPinAsync(conn);
+        return Ok(new { is_set = !string.IsNullOrWhiteSpace(pin) });
+    }
+
+    [HttpPost("setup-pin")]
+    public async Task<IActionResult> SetupPin([FromBody] AdminPinSetupRequest body)
+    {
+        var pin = (body.Pin ?? "").Trim();
+        if (pin.Length < 4)
+            return BadRequest(new { detail = "PIN muss mindestens 4 Zeichen haben" });
+
+        await using var conn = _db.CreateConnection();
+        var existing = await GetAdminPinAsync(conn);
+        if (!string.IsNullOrWhiteSpace(existing))
+            return Conflict(new { detail = "Admin-PIN ist bereits gesetzt" });
+
+        await SetAdminPinAsync(conn, pin);
+        _log.LogInformation("[Admin] Admin-PIN wurde initial gesetzt");
+        return Ok(new { ok = true });
+    }
+
+    [HttpPost("verify")]
+    public async Task<IActionResult> Verify([FromBody] AdminVerifyRequest body)
+    {
+        await using var conn = _db.CreateConnection();
+        var adminPin = await GetAdminPinAsync(conn);
+        if (string.IsNullOrWhiteSpace(adminPin))
+            return BadRequest(new { detail = "Admin-PIN ist noch nicht eingerichtet" });
+
+        if (body.Pin != adminPin)
         {
             _log.LogWarning("[Admin] Fehlgeschlagener Login-Versuch");
             return Unauthorized(new { detail = "Falsche Admin-PIN" });
@@ -58,6 +85,29 @@ public class AdminController : ControllerBase
         _log.LogInformation("[Admin] Login erfolgreich");
         var token = _auth.CreateToken(new() { ["sub"] = "admin", ["role"] = "admin" }, 12);
         return Ok(new { token });
+    }
+
+    [HttpPost("change-pin")]
+    [Authorize]
+    public async Task<IActionResult> ChangePin([FromBody] AdminPinChangeRequest body)
+    {
+        if (!IsAdmin()) return Forbid();
+
+        var currentPin = (body.CurrentPin ?? "").Trim();
+        var newPin = (body.NewPin ?? "").Trim();
+        if (newPin.Length < 4)
+            return BadRequest(new { detail = "Neue PIN muss mindestens 4 Zeichen haben" });
+
+        await using var conn = _db.CreateConnection();
+        var stored = await GetAdminPinAsync(conn);
+        if (string.IsNullOrWhiteSpace(stored))
+            return BadRequest(new { detail = "Admin-PIN ist noch nicht eingerichtet" });
+        if (stored != currentPin)
+            return Unauthorized(new { detail = "Aktuelle PIN ist falsch" });
+
+        await SetAdminPinAsync(conn, newPin);
+        _log.LogInformation("[Admin] Admin-PIN geändert");
+        return Ok(new { ok = true });
     }
 
     // ═══ Children ════════════════════════════════════════════════════════
@@ -551,6 +601,22 @@ public class AdminController : ControllerBase
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
+
+
+    private static async Task<string?> GetAdminPinAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT value FROM settings WHERE key='admin_pin'";
+        return (string?)await cmd.ExecuteScalarAsync();
+    }
+
+    private static async Task SetAdminPinAsync(SqliteConnection conn, string pin)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "INSERT INTO settings (key, value) VALUES ('admin_pin', @pin) ON CONFLICT(key) DO UPDATE SET value=excluded.value";
+        cmd.Parameters.AddWithValue("@pin", pin);
+        await cmd.ExecuteNonQueryAsync();
+    }
 
     private bool IsAdmin()
     {

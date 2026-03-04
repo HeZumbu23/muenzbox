@@ -47,6 +47,15 @@ export const endSession = (sessionId, token) =>
   request(`/sessions/${sessionId}/end`, { method: 'POST', token })
 
 // --- Admin ---
+export const adminPinStatus = () =>
+  request('/admin/pin-status')
+
+export const adminSetupPin = (pin) =>
+  request('/admin/setup-pin', {
+    method: 'POST',
+    body: JSON.stringify({ pin }),
+  })
+
 export const adminVerify = (pin) =>
   request('/admin/verify', {
     method: 'POST',
@@ -114,11 +123,25 @@ export const adminDeleteDevice = (deviceId, token) =>
 export const adminGetMockStatus = (token) =>
   request('/admin/mock-status', { token })
 
+export const adminChangePin = (currentPin, newPin, token) =>
+  request('/admin/change-pin', {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ current_pin: currentPin, new_pin: newPin }),
+  })
+
 export const setChildIcon = (childId, icon, token) =>
   request(`/children/${childId}/icon`, {
     method: 'POST',
     token,
     body: JSON.stringify({ icon }),
+  })
+
+export const changeChildPin = (childId, currentPin, newPin, token) =>
+  request(`/children/${childId}/change-pin`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ current_pin: currentPin, new_pin: newPin }),
   })
 
 export const adminExportDevices = (token) =>
