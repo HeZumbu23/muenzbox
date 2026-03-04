@@ -3,7 +3,7 @@ import {
   adminGetChildren, adminGetSessions, adminGetCoinLog,
   adminCancelSession, adminDeleteChild, adminAdjustCoins, adminAdjustPocketMoney,
   adminCreateChild, adminUpdateChild, adminGetMockStatus, adminGetPocketMoneyLog,
-  adminGetDevices, adminCreateDevice, adminUpdateDevice, adminDeleteDevice, adminExportDevices, adminImportDevices
+  adminGetDevices, adminCreateDevice, adminUpdateDevice, adminDeleteDevice, adminExportDevices, adminImportDevices, adminChangePin
 } from '../../api.js'
 import ChildForm from './ChildForm.jsx'
 import DeviceForm from './DeviceForm.jsx'
@@ -148,9 +148,29 @@ export default function AdminDashboard({ token, onLogout }) {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-gray-800 border-b border-gray-700">
         <h1 className="text-xl font-black">⚙️ Eltern-Bereich</h1>
-        <button onClick={onLogout} className="text-gray-400 hover:text-white text-lg font-bold px-4 py-2">
-          Abmelden
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              const currentPin = prompt('Aktuelle Admin-PIN eingeben:')
+              if (!currentPin) return
+              const newPin = prompt('Neue Admin-PIN eingeben (mind. 4 Zeichen):')
+              if (!newPin) return
+              try {
+                await adminChangePin(currentPin, newPin, token)
+                alert('Admin-PIN gespeichert.')
+              } catch (e) {
+                if (e.status === 401) { onLogout(); return }
+                alert(e.message)
+              }
+            }}
+            className="text-gray-300 hover:text-white text-sm font-bold px-3 py-2"
+          >
+            PIN ändern
+          </button>
+          <button onClick={onLogout} className="text-gray-400 hover:text-white text-lg font-bold px-4 py-2">
+            Abmelden
+          </button>
+        </div>
       </div>
 
       <MockStatusBar token={token} />

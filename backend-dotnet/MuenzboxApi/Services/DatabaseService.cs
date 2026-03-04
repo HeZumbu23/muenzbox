@@ -112,6 +112,14 @@ public class DatabaseService
             catch { /* already exists */ }
         }
 
+
+        await ExecAsync(conn, """
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+            """);
+
         await ExecAsync(conn, """
             CREATE TABLE IF NOT EXISTS devices (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

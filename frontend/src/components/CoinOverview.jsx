@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getChildStatus, getActiveSession, setChildIcon } from '../api.js'
+import { changeChildPin, getChildStatus, getActiveSession, setChildIcon } from '../api.js'
 
 const ANIMAL_ICONS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵']
 
@@ -103,7 +103,6 @@ function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
         </span>
       </div>
 
-      {/* Coin icons */}
       <div className="flex flex-wrap gap-2 min-h-10">
         {Array.from({ length: coins }).map((_, i) => (
           <span key={i} className="text-3xl">🪙</span>
@@ -168,11 +167,91 @@ function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
   )
 }
 
+function ChildSettings({ childId, token, status, onClose, onSaved, onError }) {
+  const [currentPin, setCurrentPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  return (
+    <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl p-5 w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-gray-900 text-xl font-black">⚙️ Einstellungen</p>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 font-bold">Schließen</button>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-gray-900 text-lg font-bold mb-2">Icon wählen</p>
+          <div className="grid grid-cols-6 gap-2">
+            {ANIMAL_ICONS.map((icon) => (
+              <button
+                key={icon}
+                onClick={async () => {
+                  try {
+                    await setChildIcon(childId, icon, token)
+                    onSaved({ icon })
+                  } catch (e) {
+                    onError?.(e.message || 'Icon konnte nicht gespeichert werden.')
+                  }
+                }}
+                className={`text-3xl rounded-xl p-2 border ${status.icon === icon ? 'bg-yellow-100 border-yellow-400' : 'bg-gray-100 hover:bg-gray-200 border-transparent'}`}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-gray-900 text-lg font-bold mb-2">PIN ändern</p>
+          <div className="flex flex-col gap-2">
+            <input
+              type="password"
+              inputMode="numeric"
+              placeholder="Aktuelle PIN"
+              value={currentPin}
+              onChange={(e) => setCurrentPin(e.target.value)}
+              className="rounded-xl border border-gray-300 px-3 py-2"
+            />
+            <input
+              type="password"
+              inputMode="numeric"
+              placeholder="Neue PIN"
+              value={newPin}
+              onChange={(e) => setNewPin(e.target.value)}
+              className="rounded-xl border border-gray-300 px-3 py-2"
+            />
+            <button
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true)
+                try {
+                  await changeChildPin(childId, currentPin, newPin, token)
+                  setCurrentPin('')
+                  setNewPin('')
+                  alert('PIN aktualisiert')
+                } catch (e) {
+                  onError?.(e.message || 'PIN konnte nicht geändert werden.')
+                } finally {
+                  setSaving(false)
+                }
+              }}
+              className="mt-1 py-2 bg-gray-900 text-white rounded-xl font-bold disabled:opacity-60"
+            >
+              PIN speichern
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CoinOverview({ childId, token, onSessionStart, onLogout, onError }) {
   const [status, setStatus] = useState(null)
   const [activeSession, setActiveSession] = useState(null)
   const [error, setError] = useState('')
-  const [showIconPicker, setShowIconPicker] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   const load = async () => {
     try {
@@ -217,24 +296,26 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout,
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-blue-500 to-purple-600">
-      {/* Header */}
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <div>
           <p className="text-white/70 text-sm font-bold uppercase tracking-wider">Hallo</p>
-          <h2 className="text-white text-3xl font-black">{status.icon || "🐼"} {status.name}</h2>
+          <h2 className="text-white text-3xl font-black">{status.icon || '🐼'} {status.name}</h2>
         </div>
-        <button
-          onClick={() => setShowIconPicker(true)}
-          className="text-white/80 hover:text-white font-bold text-lg transition-colors px-4 py-2"
-        >
-          Icon ändern
-        </button>
-        <button
-          onClick={onLogout}
-          className="text-white/50 hover:text-white/80 font-bold text-lg transition-colors px-4 py-2"
-        >
-          Abmelden
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="text-white/80 hover:text-white font-bold text-2xl transition-colors px-3 py-2"
+            title="Einstellungen"
+          >
+            ⚙️
+          </button>
+          <button
+            onClick={onLogout}
+            className="text-white/50 hover:text-white/80 font-bold text-lg transition-colors px-4 py-2"
+          >
+            Abmelden
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-4">
@@ -246,7 +327,6 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout,
           <SessionBanner session={activeSession} onClick={() => onSessionStart(activeSession)} />
         )}
 
-        {/* Time window info */}
         {(() => {
           const periods = status.is_weekend_or_holiday
             ? status.weekend_periods
@@ -278,38 +358,18 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout,
         />
       </div>
 
-      {showIconPicker && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 w-full max-w-md">
-            <p className="text-gray-900 text-xl font-black mb-3">Wähle dein Tier-Icon</p>
-            <div className="grid grid-cols-6 gap-2">
-              {ANIMAL_ICONS.map((icon) => (
-                <button
-                  key={icon}
-                  onClick={async () => {
-                    try {
-                      await setChildIcon(childId, icon, token)
-                      setStatus((s) => ({ ...s, icon }))
-                      setShowIconPicker(false)
-                    } catch (e) {
-                      setError(e.message)
-                      onError?.(e.message || 'Icon konnte nicht gespeichert werden.')
-                    }
-                  }}
-                  className="text-3xl bg-gray-100 hover:bg-gray-200 rounded-xl p-2"
-                >
-                  {icon}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowIconPicker(false)}
-              className="mt-4 w-full py-2 bg-gray-800 text-white rounded-xl font-bold"
-            >
-              Schließen
-            </button>
-          </div>
-        </div>
+      {showSettings && (
+        <ChildSettings
+          childId={childId}
+          token={token}
+          status={status}
+          onClose={() => setShowSettings(false)}
+          onSaved={(changes) => setStatus((s) => ({ ...s, ...changes }))}
+          onError={(msg) => {
+            setError(msg)
+            onError?.(msg)
+          }}
+        />
       )}
     </div>
   )
