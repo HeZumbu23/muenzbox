@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import ChildSelect from './components/ChildSelect.jsx'
 import PinInput from './components/PinInput.jsx'
 import CoinOverview from './components/CoinOverview.jsx'
@@ -13,22 +13,60 @@ const IS_ADMIN = window.location.pathname.startsWith('/eltern')
 const buildNumber = import.meta.env.VITE_BUILD_NUMBER
 const commitMsg = import.meta.env.VITE_COMMIT_MSG
 
-function askMultiplicationChallenge() {
+function createMultiplicationChallenge() {
   const left = Math.floor(Math.random() * 10) + 1
   const right = Math.floor(Math.random() * 10) + 1
-  const expected = left * right
-
-  const answerRaw = window.prompt(`Rechne kurz: ${left} × ${right} = ?`)
-  if (answerRaw === null) {
-    return { ok: false, message: 'Freischalten abgebrochen.' }
+  return {
+    left,
+    right,
+    expected: left * right,
   }
+}
 
-  const answer = Number.parseInt(answerRaw.trim(), 10)
-  if (!Number.isInteger(answer) || answer !== expected) {
-    return { ok: false, message: 'Falsche Antwort – die Münze wurde nicht freigeschaltet.' }
-  }
+function MultiplicationDialog({ challenge, answer, onAnswerChange, onCancel, onConfirm }) {
+  return (
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-md rounded-3xl border border-white/20 bg-gradient-to-b from-blue-500 to-purple-600 p-6 shadow-2xl">
+        <p className="text-white/80 text-sm font-bold uppercase tracking-wider">Sicherheitsfrage</p>
+        <h3 className="mt-1 text-white text-3xl font-black">🧠 Rechne kurz mit!</h3>
 
-  return { ok: true, message: '' }
+        <div className="mt-5 rounded-2xl bg-white/15 p-5 text-center">
+          <p className="text-white/80 text-sm font-bold">Kleines Einmaleins</p>
+          <p className="mt-1 text-white text-5xl font-black">
+            {challenge.left} × {challenge.right} = ?
+          </p>
+        </div>
+
+        <input
+          type="number"
+          inputMode="numeric"
+          autoFocus
+          value={answer}
+          onChange={(e) => onAnswerChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onConfirm()
+          }}
+          placeholder="Deine Antwort"
+          className="mt-4 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-center text-2xl font-black text-gray-900 outline-none focus:ring-4 focus:ring-yellow-300/50"
+        />
+
+        <div className="mt-4 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-2xl bg-white/15 py-3 text-white font-bold hover:bg-white/25"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-2xl bg-yellow-400 py-3 text-gray-900 font-extrabold hover:bg-yellow-300"
+          >
+            Prüfen ✓
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function VersionFooter() {
@@ -53,7 +91,7 @@ export default function App() {
       const data = JSON.parse(raw)
       return data.child ? { id: data.child.id, name: data.child.name } : null
     } catch { return null }
-  })  // { id, name }
+  }) // { id, name }
   const [childToken, setChildToken] = useState(() => {
     const raw = sessionStorage.getItem('childAuth')
     if (!raw) return null
@@ -67,6 +105,91 @@ export default function App() {
   const [activeSession, setActiveSession] = useState(null)
   const [kioskError, setKioskError] = useState('')
   const [screen, setScreen] = useState(() => (sessionStorage.getItem('childAuth') ? 'overview' : 'select')) // select | pin | overview | session
+  const [pendingSessionStart, setPendingSessionStart] = useState(null) // { type, coins }
+  const [challenge, setChallenge] = useState(null) // { left, right, expected }
+  const [challengeAnswer, setChallengeAnswer] = useState('')
+
+  const handleChildSelect = (child) => {
+    setSelectedChild(child)
+    setScreen('pin')
+  }
+
+  const handlePinSuccess = (token, id, name, icon) => {
+    setChildToken(token)
+    setChildId(id)
+    const child = { id, name, icon: icon || '🐼' }
+    setSelectedChild(child)
+    sessionStorage.setItem('childAuth', JSON.stringify({ token, child }))
+    setKioskError('')
+    setScreen('overview')
+  }
+
+  const startSessionAfterChallenge = async (type, coins) => {
+    try {
+      const session = await startSession(childId, type, coins, childToken)
+      setActiveSession(session)
+      setKioskError('')
+      setScreen('session')
+    } catch (e) {
+      setKioskError(e.message || 'Hardware konnte nicht freigeschaltet werden.')
+    }
+  }
+
+  const handleChallengeCancel = () => {
+    setChallenge(null)
+    setPendingSessionStart(null)
+    setChallengeAnswer('')
+    setKioskError('Freischalten abgebrochen.')
+  }
+
+  const handleChallengeConfirm = async () => {
+    if (!challenge || !pendingSessionStart) return
+
+    const answer = Number.parseInt(challengeAnswer.trim(), 10)
+    if (!Number.isInteger(answer) || answer !== challenge.expected) {
+      setKioskError('Falsche Antwort – die Münze wurde nicht freigeschaltet.')
+      return
+    }
+
+    const { type, coins } = pendingSessionStart
+    setChallenge(null)
+    setPendingSessionStart(null)
+    setChallengeAnswer('')
+    await startSessionAfterChallenge(type, coins)
+  }
+
+  const handleSessionStart = (existingSession, type, coins) => {
+    if (existingSession) {
+      // Show existing active session
+      setActiveSession(existingSession)
+      setScreen('session')
+      return
+    }
+
+    setKioskError('')
+    setPendingSessionStart({ type, coins })
+    setChallenge(createMultiplicationChallenge())
+    setChallengeAnswer('')
+  }
+
+  const handleSessionEnd = () => {
+    setActiveSession(null)
+    setKioskError('')
+    setScreen('overview')
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('childAuth')
+    setSelectedChild(null)
+    setChildToken(null)
+    setChildId(null)
+    setActiveSession(null)
+    setKioskError('')
+    setPendingSessionStart(null)
+    setChallenge(null)
+    setChallengeAnswer('')
+    setScreen('select')
+  }
 
   // --- Admin mode ---
   if (IS_ADMIN) {
@@ -98,63 +221,6 @@ export default function App() {
   }
 
   // --- Children kiosk mode ---
-
-  const handleChildSelect = (child) => {
-    setSelectedChild(child)
-    setScreen('pin')
-  }
-
-  const handlePinSuccess = (token, id, name, icon) => {
-    setChildToken(token)
-    setChildId(id)
-    const child = { id, name, icon: icon || "🐼" }
-    setSelectedChild(child)
-    sessionStorage.setItem('childAuth', JSON.stringify({ token, child }))
-    setKioskError('')
-    setScreen('overview')
-  }
-
-  const handleSessionStart = async (existingSession, type, coins) => {
-    if (existingSession) {
-      // Show existing active session
-      setActiveSession(existingSession)
-      setScreen('session')
-      return
-    }
-
-    const challenge = askMultiplicationChallenge()
-    if (!challenge.ok) {
-      setKioskError(challenge.message)
-      return
-    }
-
-    // Start new session
-    try {
-      const session = await startSession(childId, type, coins, childToken)
-      setActiveSession(session)
-      setKioskError('')
-      setScreen('session')
-    } catch (e) {
-      setKioskError(e.message || 'Hardware konnte nicht freigeschaltet werden.')
-    }
-  }
-
-  const handleSessionEnd = () => {
-    setActiveSession(null)
-    setKioskError('')
-    setScreen('overview')
-  }
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('childAuth')
-    setSelectedChild(null)
-    setChildToken(null)
-    setChildId(null)
-    setActiveSession(null)
-    setKioskError('')
-    setScreen('select')
-  }
-
   return (
     <div className="h-screen w-screen overflow-hidden">
       {kioskError && (
@@ -198,6 +264,16 @@ export default function App() {
           token={childToken}
           onEnd={handleSessionEnd}
           onError={setKioskError}
+        />
+      )}
+
+      {challenge && (
+        <MultiplicationDialog
+          challenge={challenge}
+          answer={challengeAnswer}
+          onAnswerChange={setChallengeAnswer}
+          onCancel={handleChallengeCancel}
+          onConfirm={handleChallengeConfirm}
         />
       )}
 
