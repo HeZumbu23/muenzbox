@@ -140,14 +140,15 @@ public class AdminController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO children
-              (name, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
+              (name, age, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
                tv_coins, tv_coins_weekly, tv_coins_max,
                pocket_money_cents, pocket_money_weekly_cents,
                allowed_periods, weekend_periods)
             VALUES
-              (@name,@ph,@sc,@scw,@scm,@tc,@tcw,@tcm,@pm,@pmw,@ap,@wp)
+              (@name,@age,@ph,@sc,@scw,@scm,@tc,@tcw,@tcm,@pm,@pmw,@ap,@wp)
             """;
         cmd.Parameters.AddWithValue("@name", body.Name);
+        cmd.Parameters.AddWithValue("@age", body.Age is null ? DBNull.Value : body.Age.Value);
         cmd.Parameters.AddWithValue("@ph", pinHash);
         cmd.Parameters.AddWithValue("@sc", body.SwitchCoins);
         cmd.Parameters.AddWithValue("@scw", body.SwitchCoinsWeekly);
@@ -183,6 +184,7 @@ public class AdminController : ControllerBase
         var updates = new Dictionary<string, object>();
         if (body.Name is not null) updates["name"] = body.Name;
         if (body.Pin is not null) updates["pin_hash"] = _auth.HashPin(body.Pin);
+        if (body.Age.HasValue) updates["age"] = body.Age.Value;
         if (body.SwitchCoins.HasValue) updates["switch_coins"] = body.SwitchCoins.Value;
         if (body.SwitchCoinsWeekly.HasValue) updates["switch_coins_weekly"] = body.SwitchCoinsWeekly.Value;
         if (body.SwitchCoinsMax.HasValue) updates["switch_coins_max"] = body.SwitchCoinsMax.Value;
