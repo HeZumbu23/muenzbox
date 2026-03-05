@@ -2,7 +2,7 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [prod]
+    branches: [prod, dev]
   workflow_dispatch:
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
           context: ./backend-dotnet
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/muenzbox-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/muenzbox-backend:${{ github.ref_name }}
             ${{ secrets.DOCKERHUB_USERNAME }}/muenzbox-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -47,7 +47,7 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/muenzbox-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/muenzbox-frontend:${{ github.ref_name }}
             ${{ secrets.DOCKERHUB_USERNAME }}/muenzbox-frontend:${{ github.sha }}
           build-args: |
             VITE_BUILD_NUMBER=${{ github.run_number }}
