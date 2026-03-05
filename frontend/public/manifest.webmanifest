@@ -1,0 +1,19 @@
+{
+  "name": "Münzbox",
+  "short_name": "Münzbox",
+  "description": "Digitale Münzbox für Familien mit Kinderkonten und Auszahlungen.",
+  "lang": "de",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
