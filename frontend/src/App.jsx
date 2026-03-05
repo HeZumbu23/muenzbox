@@ -117,6 +117,7 @@ export default function App() {
   const [screen, setScreen] = useState(() => (sessionStorage.getItem('childAuth') ? 'overview' : 'select')) // select | pin | overview | session
   const [pendingSessionStart, setPendingSessionStart] = useState(null) // { type, coins }
   const [challenge, setChallenge] = useState(null) // { left, right, expected }
+  const [showChallengeDialog, setShowChallengeDialog] = useState(false)
   const [challengeAnswer, setChallengeAnswer] = useState('')
   const [challengeSuccess, setChallengeSuccess] = useState(false)
 
@@ -147,7 +148,7 @@ export default function App() {
   }
 
   const handleChallengeCancel = () => {
-    setChallenge(null)
+    setShowChallengeDialog(false)
     setPendingSessionStart(null)
     setChallengeAnswer('')
     setChallengeSuccess(false)
@@ -166,6 +167,7 @@ export default function App() {
     const { type, coins } = pendingSessionStart
     setChallengeSuccess(true)
     await new Promise((resolve) => setTimeout(resolve, 900))
+    setShowChallengeDialog(false)
     setChallenge(null)
     setPendingSessionStart(null)
     setChallengeAnswer('')
@@ -183,7 +185,8 @@ export default function App() {
 
     setKioskError('')
     setPendingSessionStart({ type, coins })
-    setChallenge(createMultiplicationChallenge())
+    setChallenge((c) => c ?? createMultiplicationChallenge())
+    setShowChallengeDialog(true)
     setChallengeAnswer('')
     setChallengeSuccess(false)
   }
@@ -203,6 +206,7 @@ export default function App() {
     setKioskError('')
     setPendingSessionStart(null)
     setChallenge(null)
+    setShowChallengeDialog(false)
     setChallengeAnswer('')
     setChallengeSuccess(false)
     setScreen('select')
@@ -284,7 +288,7 @@ export default function App() {
         />
       )}
 
-      {challenge && (
+      {showChallengeDialog && challenge && (
         <MultiplicationDialog
           challenge={challenge}
           answer={challengeAnswer}
