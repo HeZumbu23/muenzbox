@@ -23,7 +23,7 @@ function createMultiplicationChallenge() {
   }
 }
 
-function MultiplicationDialog({ challenge, answer, success, onAnswerChange, onCancel, onConfirm }) {
+function MultiplicationDialog({ challenge, answer, success, onAppendDigit, onBackspace, onClear, onCancel, onConfirm }) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-3xl border border-white/20 bg-gradient-to-b from-blue-500 to-purple-600 p-6 shadow-2xl">
@@ -39,18 +39,39 @@ function MultiplicationDialog({ challenge, answer, success, onAnswerChange, onCa
               </p>
             </div>
 
-            <input
-              type="number"
-              inputMode="numeric"
-              autoFocus
-              value={answer}
-              onChange={(e) => onAnswerChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onConfirm()
-              }}
-              placeholder="Deine Antwort"
-              className="mt-4 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-center text-2xl font-black text-gray-900 outline-none focus:ring-4 focus:ring-yellow-300/50"
-            />
+            <div className="mt-4 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-center text-3xl font-black text-gray-900 min-h-16 flex items-center justify-center">
+              {answer || '—'}
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+                <button
+                  key={digit}
+                  onClick={() => onAppendDigit(String(digit))}
+                  className="rounded-xl bg-white/15 py-3 text-2xl font-black text-white hover:bg-white/25"
+                >
+                  {digit}
+                </button>
+              ))}
+              <button
+                onClick={onClear}
+                className="rounded-xl bg-white/15 py-3 text-lg font-black text-white hover:bg-white/25"
+              >
+                C
+              </button>
+              <button
+                onClick={() => onAppendDigit('0')}
+                className="rounded-xl bg-white/15 py-3 text-2xl font-black text-white hover:bg-white/25"
+              >
+                0
+              </button>
+              <button
+                onClick={onBackspace}
+                className="rounded-xl bg-white/15 py-3 text-lg font-black text-white hover:bg-white/25"
+              >
+                ⌫
+              </button>
+            </div>
 
             <div className="mt-4 flex gap-3">
               <button
@@ -61,7 +82,8 @@ function MultiplicationDialog({ challenge, answer, success, onAnswerChange, onCa
               </button>
               <button
                 onClick={onConfirm}
-                className="flex-1 rounded-2xl bg-yellow-400 py-3 text-gray-900 font-extrabold hover:bg-yellow-300"
+                disabled={!answer}
+                className="flex-1 rounded-2xl bg-yellow-400 py-3 text-gray-900 font-extrabold hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Prüfen ✓
               </button>
@@ -145,6 +167,22 @@ export default function App() {
     } catch (e) {
       setKioskError(e.message || 'Hardware konnte nicht freigeschaltet werden.')
     }
+  }
+
+
+  const appendChallengeDigit = (digit) => {
+    setChallengeAnswer((value) => {
+      if (value.length >= 3) return value
+      return `${value}${digit}`
+    })
+  }
+
+  const removeChallengeDigit = () => {
+    setChallengeAnswer((value) => value.slice(0, -1))
+  }
+
+  const clearChallengeAnswer = () => {
+    setChallengeAnswer('')
   }
 
   const handleChallengeCancel = () => {
@@ -293,7 +331,9 @@ export default function App() {
           challenge={challenge}
           answer={challengeAnswer}
           success={challengeSuccess}
-          onAnswerChange={setChallengeAnswer}
+          onAppendDigit={appendChallengeDigit}
+          onBackspace={removeChallengeDigit}
+          onClear={clearChallengeAnswer}
           onCancel={handleChallengeCancel}
           onConfirm={handleChallengeConfirm}
         />
