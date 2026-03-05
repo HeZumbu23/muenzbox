@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace MuenzboxApi.Models;
 
 // ── Public child list entry ────────────────────────────────────────────────
-public record ChildPublic(int Id, string Name, int Age, int SwitchCoins, int TvCoins, string Icon);
+public record ChildPublic(int Id, string Name, string? BirthDate, int SwitchCoins, int TvCoins, string Icon);
 
 // ── Time slot {"von":"HH:MM","bis":"HH:MM"} ───────────────────────────────
 public record TimeSlot(string Von, string Bis);
@@ -21,7 +21,7 @@ public record ChildStatus(
     int TvCoinsMax,
     int PocketMoneyCents,
     int PocketMoneyWeeklyCents,
-    int? Age,
+    string? BirthDate,
     List<TimeSlot> AllowedPeriods,
     List<TimeSlot> WeekendPeriods,
     bool IsWeekendOrHoliday
@@ -87,7 +87,7 @@ public class ChildCreateRequest
 {
     public string Name { get; set; } = "";
     public string Pin { get; set; } = "";
-    public int? Age { get; set; }
+    public string? BirthDate { get; set; }
     public int SwitchCoins { get; set; } = 0;
     public int SwitchCoinsWeekly { get; set; } = 2;
     public int SwitchCoinsMax { get; set; } = 100;
@@ -105,7 +105,7 @@ public class ChildUpdateRequest
 {
     public string? Name { get; set; }
     public string? Pin { get; set; }
-    public int? Age { get; set; }
+    public string? BirthDate { get; set; }
     public int? SwitchCoins { get; set; }
     public int? SwitchCoinsWeekly { get; set; }
     public int? SwitchCoinsMax { get; set; }

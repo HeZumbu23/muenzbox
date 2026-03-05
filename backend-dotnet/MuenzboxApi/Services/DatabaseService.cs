@@ -41,7 +41,7 @@ public class DatabaseService
             CREATE TABLE IF NOT EXISTS children (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                age INTEGER,
+                birth_date TEXT,
                 pin_hash TEXT NOT NULL,
                 switch_coins INTEGER DEFAULT 0,
                 switch_coins_weekly INTEGER DEFAULT 2,
@@ -113,7 +113,7 @@ public class DatabaseService
             catch { /* already exists */ }
         }
 
-        try { await ExecAsync(conn, "ALTER TABLE children ADD COLUMN age INTEGER"); }
+        try { await ExecAsync(conn, "ALTER TABLE children ADD COLUMN birth_date TEXT"); }
         catch { /* already exists */ }
 
 

@@ -34,14 +34,14 @@ public class ChildrenController : ControllerBase
         var result = new List<ChildPublic>();
 
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name, age, switch_coins, tv_coins, icon FROM children ORDER BY name";
+        cmd.CommandText = "SELECT id, name, birth_date, switch_coins, tv_coins, icon FROM children ORDER BY name";
         await using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
             result.Add(new ChildPublic(
                 reader.GetInt32(0),
                 reader.GetString(1),
-                reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
+                reader.IsDBNull(2) ? null : reader.GetString(2),
                 reader.GetInt32(3),
                 reader.GetInt32(4),
                 reader.IsDBNull(5) ? "🐼" : reader.GetString(5)));
@@ -114,7 +114,7 @@ public class ChildrenController : ControllerBase
             TvCoinsMax: (int)(long)(row["tv_coins_max"] ?? 10L),
             PocketMoneyCents: (int)(long)(row["pocket_money_cents"] ?? 0L),
             PocketMoneyWeeklyCents: (int)(long)(row["pocket_money_weekly_cents"] ?? 0L),
-            Age: row["age"] is long age ? (int)age : null,
+            BirthDate: row["birth_date"] as string,
             AllowedPeriods: allowed,
             WeekendPeriods: weekend,
             IsWeekendOrHoliday: _time.IsWeekendOrHoliday()
