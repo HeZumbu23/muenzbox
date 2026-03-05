@@ -51,7 +51,7 @@ export default function ChildSelect({ onSelect }) {
 
       <button
         onClick={() => (window.location.href = '/eltern')}
-        className="absolute bottom-6 right-6 text-white/70 hover:text-white text-sm font-bold transition-colors bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full"
+        className="absolute right-6 bottom-14 z-20 sm:bottom-6 text-white/70 hover:text-white text-sm font-bold transition-colors bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full"
       >
         Eltern ⚙️
       </button>
