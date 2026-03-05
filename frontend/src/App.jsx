@@ -13,6 +13,24 @@ const IS_ADMIN = window.location.pathname.startsWith('/eltern')
 const buildNumber = import.meta.env.VITE_BUILD_NUMBER
 const commitMsg = import.meta.env.VITE_COMMIT_MSG
 
+function askMultiplicationChallenge() {
+  const left = Math.floor(Math.random() * 10) + 1
+  const right = Math.floor(Math.random() * 10) + 1
+  const expected = left * right
+
+  const answerRaw = window.prompt(`Rechne kurz: ${left} × ${right} = ?`)
+  if (answerRaw === null) {
+    return { ok: false, message: 'Freischalten abgebrochen.' }
+  }
+
+  const answer = Number.parseInt(answerRaw.trim(), 10)
+  if (!Number.isInteger(answer) || answer !== expected) {
+    return { ok: false, message: 'Falsche Antwort – die Münze wurde nicht freigeschaltet.' }
+  }
+
+  return { ok: true, message: '' }
+}
+
 function VersionFooter() {
   return (
     <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none select-none">
@@ -103,6 +121,13 @@ export default function App() {
       setScreen('session')
       return
     }
+
+    const challenge = askMultiplicationChallenge()
+    if (!challenge.ok) {
+      setKioskError(challenge.message)
+      return
+    }
+
     // Start new session
     try {
       const session = await startSession(childId, type, coins, childToken)
