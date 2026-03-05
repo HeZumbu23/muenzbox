@@ -75,6 +75,7 @@ export default function ChildForm({ child, onSave, onClose }) {
   const [form, setForm] = useState({
     name: child?.name ?? '',
     pin: '',
+    birth_date: child?.birth_date ?? '',
     switch_coins: child?.switch_coins ?? 0,
     switch_coins_weekly: child?.switch_coins_weekly ?? 2,
     switch_coins_max: child?.switch_coins_max ?? 100,
@@ -97,6 +98,7 @@ export default function ChildForm({ child, onSave, onClose }) {
     try {
       const data = { ...form }
       if (!data.pin) delete data.pin
+      if (!data.birth_date) delete data.birth_date
       await onSave(data)
     } finally {
       setSaving(false)
@@ -124,6 +126,12 @@ export default function ChildForm({ child, onSave, onClose }) {
             value={form.pin}
             type="number"
             onChange={(e) => update('pin', e.target.value)}
+          />
+          <Field
+            label="Geburtsdatum"
+            value={form.birth_date}
+            type="date"
+            onChange={(e) => update('birth_date', e.target.value)}
           />
 
           <div className="border-t border-gray-700 pt-4">

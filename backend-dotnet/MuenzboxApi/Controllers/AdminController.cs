@@ -140,14 +140,19 @@ public class AdminController : ControllerBase
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO children
-              (name, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
+              (name, birth_date, pin_hash, switch_coins, switch_coins_weekly, switch_coins_max,
                tv_coins, tv_coins_weekly, tv_coins_max,
                pocket_money_cents, pocket_money_weekly_cents,
                allowed_periods, weekend_periods)
             VALUES
-              (@name,@ph,@sc,@scw,@scm,@tc,@tcw,@tcm,@pm,@pmw,@ap,@wp)
+              (@name,@birthDate,@ph,@sc,@scw,@scm,@tc,@tcw,@tcm,@pm,@pmw,@ap,@wp)
             """;
         cmd.Parameters.AddWithValue("@name", body.Name);
+        var birthDate = NormalizeBirthDate(body.BirthDate);
+        if (body.BirthDate is not null && birthDate is null)
+            return BadRequest(new { detail = "Geburtsdatum muss im Format JJJJ-MM-TT sein" });
+
+        cmd.Parameters.AddWithValue("@birthDate", birthDate is null ? DBNull.Value : birthDate);
         cmd.Parameters.AddWithValue("@ph", pinHash);
         cmd.Parameters.AddWithValue("@sc", body.SwitchCoins);
         cmd.Parameters.AddWithValue("@scw", body.SwitchCoinsWeekly);
@@ -183,6 +188,13 @@ public class AdminController : ControllerBase
         var updates = new Dictionary<string, object>();
         if (body.Name is not null) updates["name"] = body.Name;
         if (body.Pin is not null) updates["pin_hash"] = _auth.HashPin(body.Pin);
+        if (body.BirthDate is not null)
+        {
+            var birthDate = NormalizeBirthDate(body.BirthDate);
+            if (birthDate is null)
+                return BadRequest(new { detail = "Geburtsdatum muss im Format JJJJ-MM-TT sein" });
+            updates["birth_date"] = birthDate;
+        }
         if (body.SwitchCoins.HasValue) updates["switch_coins"] = body.SwitchCoins.Value;
         if (body.SwitchCoinsWeekly.HasValue) updates["switch_coins_weekly"] = body.SwitchCoinsWeekly.Value;
         if (body.SwitchCoinsMax.HasValue) updates["switch_coins_max"] = body.SwitchCoinsMax.Value;
@@ -601,6 +613,17 @@ public class AdminController : ControllerBase
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
+
+
+    private static string? NormalizeBirthDate(string? value)
+    {
+        if (value is null) return null;
+        var trimmed = value.Trim();
+        if (trimmed.Length == 0) return null;
+        return DateOnly.TryParseExact(trimmed, "yyyy-MM-dd", out var parsed)
+            ? parsed.ToString("yyyy-MM-dd")
+            : null;
+    }
 
 
     private static async Task<string?> GetAdminPinAsync(SqliteConnection conn)
