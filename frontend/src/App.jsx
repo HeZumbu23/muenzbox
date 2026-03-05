@@ -23,47 +23,57 @@ function createMultiplicationChallenge() {
   }
 }
 
-function MultiplicationDialog({ challenge, answer, onAnswerChange, onCancel, onConfirm }) {
+function MultiplicationDialog({ challenge, answer, success, onAnswerChange, onCancel, onConfirm }) {
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-3xl border border-white/20 bg-gradient-to-b from-blue-500 to-purple-600 p-6 shadow-2xl">
         <p className="text-white/80 text-sm font-bold uppercase tracking-wider">Sicherheitsfrage</p>
         <h3 className="mt-1 text-white text-3xl font-black">🧠 Rechne kurz mit!</h3>
 
-        <div className="mt-5 rounded-2xl bg-white/15 p-5 text-center">
-          <p className="text-white/80 text-sm font-bold">Kleines Einmaleins</p>
-          <p className="mt-1 text-white text-5xl font-black">
-            {challenge.left} × {challenge.right} = ?
-          </p>
-        </div>
+        {!success ? (
+          <>
+            <div className="mt-5 rounded-2xl bg-white/15 p-5 text-center">
+              <p className="text-white/80 text-sm font-bold">Kleines Einmaleins</p>
+              <p className="mt-1 text-white text-5xl font-black">
+                {challenge.left} × {challenge.right} = ?
+              </p>
+            </div>
 
-        <input
-          type="number"
-          inputMode="numeric"
-          autoFocus
-          value={answer}
-          onChange={(e) => onAnswerChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onConfirm()
-          }}
-          placeholder="Deine Antwort"
-          className="mt-4 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-center text-2xl font-black text-gray-900 outline-none focus:ring-4 focus:ring-yellow-300/50"
-        />
+            <input
+              type="number"
+              inputMode="numeric"
+              autoFocus
+              value={answer}
+              onChange={(e) => onAnswerChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onConfirm()
+              }}
+              placeholder="Deine Antwort"
+              className="mt-4 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-center text-2xl font-black text-gray-900 outline-none focus:ring-4 focus:ring-yellow-300/50"
+            />
 
-        <div className="mt-4 flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 rounded-2xl bg-white/15 py-3 text-white font-bold hover:bg-white/25"
-          >
-            Abbrechen
-          </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 rounded-2xl bg-yellow-400 py-3 text-gray-900 font-extrabold hover:bg-yellow-300"
-          >
-            Prüfen ✓
-          </button>
-        </div>
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={onCancel}
+                className="flex-1 rounded-2xl bg-white/15 py-3 text-white font-bold hover:bg-white/25"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={onConfirm}
+                className="flex-1 rounded-2xl bg-yellow-400 py-3 text-gray-900 font-extrabold hover:bg-yellow-300"
+              >
+                Prüfen ✓
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="mt-5 rounded-2xl bg-green-500/25 border border-green-300/50 p-8 text-center">
+            <div className="text-7xl leading-none">✅</div>
+            <p className="mt-3 text-white text-3xl font-black">Richtig gerechnet!</p>
+            <p className="mt-1 text-green-100 font-bold">Münze wird freigeschaltet …</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -108,6 +118,7 @@ export default function App() {
   const [pendingSessionStart, setPendingSessionStart] = useState(null) // { type, coins }
   const [challenge, setChallenge] = useState(null) // { left, right, expected }
   const [challengeAnswer, setChallengeAnswer] = useState('')
+  const [challengeSuccess, setChallengeSuccess] = useState(false)
 
   const handleChildSelect = (child) => {
     setSelectedChild(child)
@@ -139,6 +150,7 @@ export default function App() {
     setChallenge(null)
     setPendingSessionStart(null)
     setChallengeAnswer('')
+    setChallengeSuccess(false)
     setKioskError('Freischalten abgebrochen.')
   }
 
@@ -152,9 +164,12 @@ export default function App() {
     }
 
     const { type, coins } = pendingSessionStart
+    setChallengeSuccess(true)
+    await new Promise((resolve) => setTimeout(resolve, 900))
     setChallenge(null)
     setPendingSessionStart(null)
     setChallengeAnswer('')
+    setChallengeSuccess(false)
     await startSessionAfterChallenge(type, coins)
   }
 
@@ -170,6 +185,7 @@ export default function App() {
     setPendingSessionStart({ type, coins })
     setChallenge(createMultiplicationChallenge())
     setChallengeAnswer('')
+    setChallengeSuccess(false)
   }
 
   const handleSessionEnd = () => {
@@ -188,6 +204,7 @@ export default function App() {
     setPendingSessionStart(null)
     setChallenge(null)
     setChallengeAnswer('')
+    setChallengeSuccess(false)
     setScreen('select')
   }
 
@@ -271,6 +288,7 @@ export default function App() {
         <MultiplicationDialog
           challenge={challenge}
           answer={challengeAnswer}
+          success={challengeSuccess}
           onAnswerChange={setChallengeAnswer}
           onCancel={handleChallengeCancel}
           onConfirm={handleChallengeConfirm}
