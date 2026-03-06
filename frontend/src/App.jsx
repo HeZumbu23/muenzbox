@@ -26,6 +26,7 @@ function VersionFooter() {
 export default function App() {
   // Admin state
   const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem('adminToken'))
+  const [isMockMode, setIsMockMode] = useState(false)
 
   // Children kiosk state
   const [selectedChild, setSelectedChild] = useState(() => {
@@ -50,11 +51,31 @@ export default function App() {
   const [kioskError, setKioskError] = useState('')
   const [screen, setScreen] = useState(() => (sessionStorage.getItem('childAuth') ? 'overview' : 'select')) // select | pin | overview | session
 
+  useEffect(() => {
+    let isMounted = true
+
+    fetch('/api/health', { signal: AbortSignal.timeout(5000) })
+      .then((resp) => (resp.ok ? resp.json() : null))
+      .then((data) => {
+        if (isMounted) setIsMockMode(data?.use_mock_adapters === true)
+      })
+      .catch(() => {})
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   // --- Admin mode ---
   if (IS_ADMIN) {
     if (!adminToken) {
       return (
         <>
+          {isMockMode && (
+            <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
+              <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
+            </div>
+          )}
           <AdminLogin
             onSuccess={(token) => {
               sessionStorage.setItem('adminToken', token)
@@ -67,6 +88,11 @@ export default function App() {
     }
     return (
       <>
+        {isMockMode && (
+          <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
+            <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
+          </div>
+        )}
         <AdminDashboard
           token={adminToken}
           onLogout={() => {
@@ -132,6 +158,11 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen overflow-hidden">
+      {isMockMode && (
+        <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
+          <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
+        </div>
+      )}
       {kioskError && (
         <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-red-300/40 bg-red-900/90 px-4 py-3 text-white shadow-2xl">
           <div className="flex items-start justify-between gap-3">
