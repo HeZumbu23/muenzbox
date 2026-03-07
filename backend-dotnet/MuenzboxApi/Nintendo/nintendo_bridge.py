@@ -27,8 +27,7 @@ async def _freigeben_async(token: str, tz: str, lang: str, minutes: int, timeout
         parental = await NintendoParental.create(auth, timezone=tz, lang=lang)
         devices = parental.devices
         if not devices:
-            print("[nintendo_bridge] Keine Geräte gefunden – Token korrekt?")
-            return False
+            raise RuntimeError("Keine Geräte gefunden – Token korrekt?")
         device = list(devices.values())[0]
         await device.add_extra_time(minutes)
     return True
@@ -51,8 +50,7 @@ async def _sperren_async(token: str, tz: str, lang: str, timeout_seconds: int) -
         parental = await NintendoParental.create(auth, timezone=tz, lang=lang)
         devices = parental.devices
         if not devices:
-            print("[nintendo_bridge] Keine Geräte gefunden – Token korrekt?")
-            return False
+            raise RuntimeError("Keine Geräte gefunden – Token korrekt?")
         device = list(devices.values())[0]
         try:
             await device.update_max_daily_playtime(0)
@@ -76,8 +74,7 @@ def switch_freigeben_sync(token, tz, lang, minutes, timeout_seconds=20) -> bool:
             timeout=max(1, int(timeout_seconds))
         ))
     except Exception as e:
-        print(f"[nintendo_bridge] switch_freigeben_sync error: {e}")
-        return False
+        raise RuntimeError(f"switch_freigeben_sync failed: {e}") from e
 
 
 def switch_sperren_sync(token, tz, lang, timeout_seconds=20) -> bool:
@@ -88,5 +85,4 @@ def switch_sperren_sync(token, tz, lang, timeout_seconds=20) -> bool:
             timeout=max(1, int(timeout_seconds))
         ))
     except Exception as e:
-        print(f"[nintendo_bridge] switch_sperren_sync error: {e}")
-        return False
+        raise RuntimeError(f"switch_sperren_sync failed: {e}") from e
