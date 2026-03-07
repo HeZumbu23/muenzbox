@@ -154,7 +154,7 @@ public class NintendoAdapter
         }
         catch (PythonException pex)
         {
-            _log.LogError("Nintendo: Python error in {Func}: {Msg}", funcName, pex.Message);
+            _log.LogError(pex, "Nintendo: Python error in {Func}: {Msg}", funcName, pex.Message);
             return false;
         }
         catch (Exception ex)
