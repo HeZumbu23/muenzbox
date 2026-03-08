@@ -1,15 +1,11 @@
-import asyncio
-from pynintendoparental import Authenticator
+"""Deprecated wrapper for backward compatibility.
 
-async def main():
-    auth = Authenticator()
-    print("\n1. Öffne diese URL im Browser:")
-    print(auth.login_url)
-    print("\n2. Mit Nintendo-Account einloggen")
-    print("3. Auf 'Diese Person auswählen' klicken – ABER NICHT KLICKEN!")
-    print("4. Stattdessen: Rechtsklick → Link-Adresse kopieren")
-    url = input("\nKopierte URL hier einfügen: ").strip()
-    await auth.async_complete_login(url)
-    print(f"\nNINTENDO_TOKEN={auth.session_token}")
+Use `tools/get-nintendo-token.py` instead.
+"""
 
-asyncio.run(main())
+from pathlib import Path
+import runpy
+
+if __name__ == "__main__":
+    target = Path(__file__).with_name("get-nintendo-token.py")
+    runpy.run_path(str(target), run_name="__main__")
