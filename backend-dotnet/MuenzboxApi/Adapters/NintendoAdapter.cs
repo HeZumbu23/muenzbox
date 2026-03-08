@@ -154,7 +154,11 @@ public class NintendoAdapter
         }
         catch (PythonException pex)
         {
-            _log.LogError("Nintendo: Python error in {Func}: {Cause}", funcName, GetPythonRootCause(pex));
+            _log.LogError(
+                "Nintendo: Python error in {Func} (token={TokenPrefix}...): {Cause}",
+                funcName,
+                GetTokenPrefix(token),
+                GetPythonRootCause(pex));
             return false;
         }
         catch (Exception ex)
@@ -162,6 +166,14 @@ public class NintendoAdapter
             _log.LogError(ex, "Nintendo: Fehler in {Func}", funcName);
             return false;
         }
+    }
+
+    private static string GetTokenPrefix(string token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return "<leer>";
+
+        return token.Length <= 10 ? token : token[..10];
     }
 
     private static string GetPythonRootCause(PythonException exception)
