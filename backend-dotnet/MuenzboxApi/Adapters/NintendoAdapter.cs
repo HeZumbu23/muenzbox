@@ -154,18 +154,17 @@ public class NintendoAdapter
         }
         catch (PythonException pex)
         {
-            Exception current = pex;
+            var current = (Exception)pex;
             while (current.InnerException is not null)
                 current = current.InnerException;
 
-            var cause = current.Message?.Trim();
+            var cause = string.IsNullOrWhiteSpace(current.Message)
+                ? "Unbekannter Python-Fehler"
+                : current.Message.Trim();
             var tokenPrefix = string.IsNullOrEmpty(token) ? "<leer>" : token[..Math.Min(10, token.Length)];
 
-            _log.LogError(
-                "Nintendo: Python error in {Func} (token={TokenPrefix}...): {Cause}",
-                funcName,
-                tokenPrefix,
-                string.IsNullOrWhiteSpace(cause) ? "Unbekannter Python-Fehler" : cause);
+            // Do not pass the exception object to avoid noisy Python/.NET stack traces in logs.
+            _log.LogError("Nintendo: Python error in {Func} (token={TokenPrefix}...): {Cause}", funcName, tokenPrefix, cause);
             return false;
         }
         catch (Exception ex)
