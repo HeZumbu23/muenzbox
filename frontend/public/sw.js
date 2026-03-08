@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'muenzbox-v1'
+const CACHE_VERSION = 'muenzbox-v2'
 const APP_SHELL_CACHE = `app-shell-${CACHE_VERSION}`
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`
 const APP_SHELL_FILES = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg']
@@ -33,28 +33,22 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url)
 
   if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
-    )
+    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')))
     return
   }
 
-  if (requestUrl.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached
+  if (requestUrl.origin !== self.location.origin) return
 
-        return fetch(event.request).then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response
-          }
-
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone()
           caches.open(RUNTIME_CACHE).then((cache) => cache.put(event.request, responseToCache))
+        }
 
-          return response
-        })
+        return response
       })
-    )
-  }
+      .catch(() => caches.match(event.request))
+  )
 })
