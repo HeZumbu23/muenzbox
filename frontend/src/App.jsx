@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ChildSelect from './components/ChildSelect.jsx'
 import PinInput from './components/PinInput.jsx'
 import CoinOverview from './components/CoinOverview.jsx'
