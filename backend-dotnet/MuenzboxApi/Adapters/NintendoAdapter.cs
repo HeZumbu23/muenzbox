@@ -154,11 +154,18 @@ public class NintendoAdapter
         }
         catch (PythonException pex)
         {
+            Exception current = pex;
+            while (current.InnerException is not null)
+                current = current.InnerException;
+
+            var cause = current.Message?.Trim();
+            var tokenPrefix = string.IsNullOrEmpty(token) ? "<leer>" : token[..Math.Min(10, token.Length)];
+
             _log.LogError(
                 "Nintendo: Python error in {Func} (token={TokenPrefix}...): {Cause}",
                 funcName,
-                GetTokenPrefix(token),
-                GetPythonRootCause(pex));
+                tokenPrefix,
+                string.IsNullOrWhiteSpace(cause) ? "Unbekannter Python-Fehler" : cause);
             return false;
         }
         catch (Exception ex)
@@ -166,24 +173,5 @@ public class NintendoAdapter
             _log.LogError(ex, "Nintendo: Fehler in {Func}", funcName);
             return false;
         }
-    }
-
-    private static string GetTokenPrefix(string token)
-    {
-        if (string.IsNullOrEmpty(token))
-            return "<leer>";
-
-        return token.Length <= 10 ? token : token[..10];
-    }
-
-    private static string GetPythonRootCause(PythonException exception)
-    {
-        Exception current = exception;
-
-        while (current.InnerException is not null)
-            current = current.InnerException;
-
-        var message = current.Message?.Trim();
-        return string.IsNullOrWhiteSpace(message) ? "Unbekannter Python-Fehler" : message;
     }
 }
