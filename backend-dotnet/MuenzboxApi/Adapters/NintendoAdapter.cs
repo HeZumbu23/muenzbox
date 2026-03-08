@@ -154,7 +154,7 @@ public class NintendoAdapter
         }
         catch (PythonException pex)
         {
-            _log.LogError(pex, "Nintendo: Python error in {Func}: {Msg}", funcName, pex.Message);
+            _log.LogError("Nintendo: Python error in {Func}: {Cause}", funcName, GetPythonRootCause(pex));
             return false;
         }
         catch (Exception ex)
@@ -162,5 +162,16 @@ public class NintendoAdapter
             _log.LogError(ex, "Nintendo: Fehler in {Func}", funcName);
             return false;
         }
+    }
+
+    private static string GetPythonRootCause(PythonException exception)
+    {
+        Exception current = exception;
+
+        while (current.InnerException is not null)
+            current = current.InnerException;
+
+        var message = current.Message?.Trim();
+        return string.IsNullOrWhiteSpace(message) ? "Unbekannter Python-Fehler" : message;
     }
 }
