@@ -1,8 +1,15 @@
 const BASE = '/api'
 
+function makeTimeoutSignal(ms) {
+  if (typeof AbortController === 'undefined') return undefined
+  const controller = new AbortController()
+  setTimeout(function () { controller.abort() }, ms)
+  return controller.signal
+}
+
 async function request(path, options = {}) {
   const resp = await fetch(BASE + path, {
-    signal: AbortSignal.timeout(10000),
+    signal: makeTimeoutSignal(10000),
     headers: {
       'Content-Type': 'application/json',
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),

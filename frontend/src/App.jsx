@@ -254,7 +254,10 @@ export default function App() {
   useEffect(() => {
     let isMounted = true
 
-    fetch('/api/health', { signal: AbortSignal.timeout(5000) })
+    const healthSignal = (typeof AbortController !== 'undefined')
+      ? (() => { const c = new AbortController(); setTimeout(function () { c.abort() }, 5000); return c.signal })()
+      : undefined
+    fetch('/api/health', { signal: healthSignal })
       .then((resp) => (resp.ok ? resp.json() : null))
       .then((data) => {
         if (isMounted) setIsMockMode(data?.use_mock_adapters === true)
