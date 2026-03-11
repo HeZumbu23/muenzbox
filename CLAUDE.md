@@ -76,6 +76,18 @@ NINTENDO_TOKEN=xxx
 ADMIN_PIN_HASH=xxx  # bcrypt
 SECRET_KEY=xxx      # für session tokens
 
+## Browser-Kompatibilität
+- Frontend MUSS auf Safari / iOS 9.3.5 laufen (altes iPad als Kiosk-Terminal)
+- Vite Legacy Plugin (@vitejs/plugin-legacy) transpiliert für Safari 9+
+- whatwg-fetch Polyfill für Fetch API (nicht vorhanden in Safari 9)
+- safari9LegacyFallback Plugin in vite.config.js: Sicherheits-Fallback
+  falls das nomodule-Detection-Script die Legacy-Bundles blockiert
+- browserslist in package.json konfiguriert für ios >= 9.3
+- Kein CSS min()/max()/clamp() verwenden (erst ab Safari 11.1)
+- Kein CSS @layer verwenden (erst ab Safari 15.4)
+- Tailwind CSS var()-basierte Farben (rgb(R G B / alpha)) funktionieren
+  erst ab Safari 12.1 – ggf. Farben als direkte rgba()-Werte setzen
+
 ## Docker Compose
 services: backend, frontend
 volumes: ./data:/data  (SQLite)
