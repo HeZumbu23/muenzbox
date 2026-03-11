@@ -27,7 +27,10 @@ jobs:
       - name: Get build info
         run: |
           MSG=$(git log --no-merges -1 --format="%s")
-          MSG=$(echo "$MSG" | tr -d '"\\' | cut -c1-60)
+          MSG=$(echo "$MSG" | tr -d '"\\')
+          if [ ${#MSG} -gt 60 ]; then
+            MSG="${MSG:0:57}..."
+          fi
           echo "COMMIT_MSG=${MSG:-update}" >> $GITHUB_ENV
 
       - name: Build and push backend
