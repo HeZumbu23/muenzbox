@@ -12,6 +12,7 @@ jobs:
     runs-on: self-hosted
     permissions:
       contents: write
+      actions: write
     concurrency:
       group: auto-merge-ai-to-dev
       cancel-in-progress: false
@@ -35,3 +36,8 @@ jobs:
           git checkout -B dev origin/dev
           git merge --no-ff --no-edit "origin/${SOURCE_BRANCH}"
           git push origin dev
+
+      - name: Trigger build workflow on dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-and-push.yml --ref dev
