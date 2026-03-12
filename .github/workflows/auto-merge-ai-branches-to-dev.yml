@@ -40,4 +40,9 @@ jobs:
       - name: Trigger build workflow on dev
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run build-and-push.yml --ref dev
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/build-and-push.yml/dispatches" \
+            -d '{"ref":"dev"}'
