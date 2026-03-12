@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -26,7 +28,14 @@ jobs:
 
       - name: Get build info
         run: |
-          MSG=$(git log --no-merges -1 --format="%s")
+          PARENTS=$(git log -1 --format="%P")
+          PARENT_COUNT=$(echo $PARENTS | wc -w)
+          if [ "$PARENT_COUNT" -gt 1 ]; then
+            MERGE_TIP=$(echo $PARENTS | awk '{print $2}')
+            MSG=$(git log -1 --format="%s" "$MERGE_TIP")
+          else
+            MSG=$(git log -1 --format="%s")
+          fi
           MSG=$(echo "$MSG" | tr -d '"\\')
           if [ ${#MSG} -gt 60 ]; then
             MSG="${MSG:0:57}..."
