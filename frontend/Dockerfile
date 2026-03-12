@@ -8,7 +8,7 @@ ARG VITE_BUILD_NUMBER=dev
 ARG VITE_COMMIT_MSG=local
 ENV VITE_BUILD_NUMBER=$VITE_BUILD_NUMBER
 ENV VITE_COMMIT_MSG=$VITE_COMMIT_MSG
-RUN npm run build
+RUN npm run build && echo "$VITE_BUILD_NUMBER" > dist/version.txt
 
 # Production stage
 FROM nginx:alpine

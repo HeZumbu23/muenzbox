@@ -10,8 +10,26 @@ import { startSession } from './api.js'
 // Determine mode from URL path
 const IS_ADMIN = window.location.pathname.startsWith('/eltern')
 
-const buildNumber = import.meta.env.VITE_BUILD_NUMBER
+const buildNumber = import.meta.env.VITE_BUILD_NUMBER || 'dev'
 const commitMsg = import.meta.env.VITE_COMMIT_MSG
+
+// Auto-update: poll /version.txt every 60s, reload if build changed
+function useAutoUpdate() {
+  useEffect(function () {
+    if (buildNumber === 'dev') return
+    var interval = setInterval(function () {
+      fetch('/version.txt?_t=' + Date.now())
+        .then(function (r) { return r.ok ? r.text() : null })
+        .then(function (remote) {
+          if (remote && remote.trim() !== '' && remote.trim() !== buildNumber) {
+            window.location.reload(true)
+          }
+        })
+        .catch(function () {})
+    }, 60000)
+    return function () { clearInterval(interval) }
+  }, [])
+}
 
 function createMultiplicationChallenge() {
   const left = Math.floor(Math.random() * 10) + 1
@@ -119,6 +137,8 @@ function VersionFooter() {
 }
 
 export default function App() {
+  useAutoUpdate()
+
   // Admin state
   const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem('adminToken'))
   const [isMockMode, setIsMockMode] = useState(false)
