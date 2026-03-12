@@ -92,25 +92,24 @@ export default function PinInput({ child, onSuccess, onBack }) {
       )}
       <div className="h-6 mb-4" />
 
-      {/* Numpad */}
-      <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
+      {/* Numpad – uses flexbox (CSS Grid not supported on Safari 9) */}
+      <div className="flex flex-wrap justify-center w-full max-w-xs">
         {KEYS.map((key) => (
-          <button
-            key={key}
-            onClick={() => handleKey(key)}
-            disabled={loading}
-            className={`h-20 text-3xl font-extrabold rounded-2xl shadow-lg transition-all duration-100 active:scale-90
-              ${key === '✓'
-                ? 'bg-green-400 hover:bg-green-300 text-white'
-                : key === '⌫'
-                ? 'bg-white/20 hover:bg-white/30 text-white'
-                : 'bg-white/20 hover:bg-white/30 text-white'
-              }
-              ${loading ? 'opacity-50' : ''}
-            `}
-          >
-            {loading && key === '✓' ? '...' : key}
-          </button>
+          <div key={key} className="w-1/3 p-2">
+            <button
+              onClick={() => handleKey(key)}
+              disabled={loading}
+              className={`w-full h-20 text-3xl font-extrabold rounded-2xl shadow-lg transition-all duration-100 active:scale-90
+                ${key === '✓'
+                  ? 'bg-green-400 hover:bg-green-300 text-white'
+                  : 'bg-white/20 hover:bg-white/30 text-white'
+                }
+                ${loading ? 'opacity-50' : ''}
+              `}
+            >
+              {loading && key === '✓' ? '...' : key}
+            </button>
+          </div>
         ))}
       </div>
     </div>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { changeChildPin, getChildStatus, getActiveSession, setChildIcon } from '../api.js'
 
-const ANIMAL_ICONS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋', '🐙', '🐵']
+// Only emojis available on iOS 9.3.5 (Unicode 8.0 / Emoji 1.0)
+const ANIMAL_ICONS = ['🐻', '🐼', '🐨', '🐯', '🐸', '🐧', '🐵', '🐶', '🐱', '🐰', '🐙', '🐮']
 
 function formatTimeShort(seconds) {
   if (seconds <= 0) return '0:00'
@@ -105,7 +106,7 @@ function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
 
       <div className="flex flex-wrap gap-2 min-h-10">
         {Array.from({ length: coins }).map((_, i) => (
-          <span key={i} className="text-3xl">🪙</span>
+          <span key={i} className="text-3xl text-yellow-400">&#9679;</span>
         ))}
         {coins === 0 && (
           <span className="text-white/40 text-lg font-bold italic">Keine Münzen</span>
@@ -182,22 +183,23 @@ function ChildSettings({ childId, token, status, onClose, onSaved, onError }) {
 
         <div className="mb-6">
           <p className="text-gray-900 text-lg font-bold mb-2">Icon wählen</p>
-          <div className="grid grid-cols-6 gap-2">
+          <div className="flex flex-wrap">
             {ANIMAL_ICONS.map((icon) => (
-              <button
-                key={icon}
-                onClick={async () => {
-                  try {
-                    await setChildIcon(childId, icon, token)
-                    onSaved({ icon })
-                  } catch (e) {
-                    onError?.(e.message || 'Icon konnte nicht gespeichert werden.')
-                  }
-                }}
-                className={`text-3xl rounded-xl p-2 border ${status.icon === icon ? 'bg-yellow-100 border-yellow-400' : 'bg-gray-100 hover:bg-gray-200 border-transparent'}`}
-              >
-                {icon}
-              </button>
+              <div key={icon} className="w-1/6 p-1">
+                <button
+                  onClick={async () => {
+                    try {
+                      await setChildIcon(childId, icon, token)
+                      onSaved({ icon })
+                    } catch (e) {
+                      onError?.(e.message || 'Icon konnte nicht gespeichert werden.')
+                    }
+                  }}
+                  className={`w-full text-3xl rounded-xl p-2 border ${status.icon === icon ? 'bg-yellow-100 border-yellow-400' : 'bg-gray-100 hover:bg-gray-200 border-transparent'}`}
+                >
+                  {icon}
+                </button>
+              </div>
             ))}
           </div>
         </div>

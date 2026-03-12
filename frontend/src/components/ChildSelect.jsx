@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { getChildren } from '../api.js'
 
-const AVATARS = ['🦁', '🐻', '🐼', '🦊', '🐨', '🐯', '🦄', '🐸', '🐧', '🦋']
+// Only emojis available on iOS 9.3.5 (Unicode 8.0 / Emoji 1.0)
+const AVATARS = ['🐻', '🐼', '🐨', '🐯', '🐸', '🐧', '🐵', '🐶', '🐱', '🐰']
 
 export default function ChildSelect({ onSelect }) {
   const [children, setChildren] = useState([])
@@ -17,8 +18,8 @@ export default function ChildSelect({ onSelect }) {
 
   return (
     <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b from-blue-500 to-purple-600 p-6">
-      <h1 className="text-white text-5xl font-black mb-2 drop-shadow-lg">Münzbox 🪙</h1>
-      <p className="text-white/80 text-xl mb-10 font-bold">Wer bist du?</p>
+      <h1 className="text-white text-5xl font-black mb-2 drop-shadow-lg">Münzbox</h1>
+      <p className="text-white/80 text-xl mb-6 font-bold">Wer bist du?</p>
 
       {error && (
         <p className="text-red-300 text-lg mb-4 font-bold">{error}</p>
@@ -31,21 +32,23 @@ export default function ChildSelect({ onSelect }) {
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-5 w-full max-w-lg">
+      {/* Flexbox statt CSS Grid (Safari 9 kompatibel) */}
+      <div className="flex flex-wrap justify-center w-full max-w-2xl">
         {children.map((child, i) => (
-          <button
-            key={child.id}
-            onClick={() => onSelect(child)}
-            className="bg-white/20 hover:bg-white/30 active:scale-95 transition-all duration-150
-                       rounded-3xl p-6 flex flex-col items-center gap-3 shadow-xl border-2 border-white/20"
-          >
-            <span className="text-7xl">{child.icon || AVATARS[i % AVATARS.length]}</span>
-            <span className="text-white text-2xl font-extrabold">{child.name}</span>
-            <div className="flex gap-3 text-white/90 text-sm font-bold">
-              <span>🎮 {child.switch_coins}</span>
-              <span>📺 {child.tv_coins}</span>
-            </div>
-          </button>
+          <div key={child.id} className="w-1/2 p-3">
+            <button
+              onClick={() => onSelect(child)}
+              className="w-full bg-white/20 hover:bg-white/30 active:scale-95 transition-all duration-150
+                         rounded-3xl p-6 flex flex-col items-center gap-3 shadow-xl border-2 border-white/20"
+            >
+              <span className="text-7xl">{child.icon || AVATARS[i % AVATARS.length]}</span>
+              <span className="text-white text-2xl font-extrabold">{child.name}</span>
+              <div className="flex gap-4 text-white/90 text-lg font-bold">
+                <span>🎮 {child.switch_coins}</span>
+                <span>📺 {child.tv_coins}</span>
+              </div>
+            </button>
+          </div>
         ))}
       </div>
 

@@ -43,34 +43,41 @@ function MultiplicationDialog({ challenge, answer, success, onAppendDigit, onBac
               {answer || '—'}
             </div>
 
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-3 flex flex-wrap">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                <button
-                  key={digit}
-                  onClick={() => onAppendDigit(String(digit))}
-                  className="rounded-xl bg-white/15 py-3 text-2xl font-black text-white hover:bg-white/25"
-                >
-                  {digit}
-                </button>
+                <div key={digit} className="w-1/3 p-1">
+                  <button
+                    onClick={() => onAppendDigit(String(digit))}
+                    className="w-full rounded-xl bg-white/15 py-3 text-2xl font-black text-white hover:bg-white/25"
+                  >
+                    {digit}
+                  </button>
+                </div>
               ))}
-              <button
-                onClick={onClear}
-                className="rounded-xl bg-white/15 py-3 text-lg font-black text-white hover:bg-white/25"
-              >
-                C
-              </button>
-              <button
-                onClick={() => onAppendDigit('0')}
-                className="rounded-xl bg-white/15 py-3 text-2xl font-black text-white hover:bg-white/25"
-              >
-                0
-              </button>
-              <button
-                onClick={onBackspace}
-                className="rounded-xl bg-white/15 py-3 text-lg font-black text-white hover:bg-white/25"
-              >
-                ⌫
-              </button>
+              <div className="w-1/3 p-1">
+                <button
+                  onClick={onClear}
+                  className="w-full rounded-xl bg-white/15 py-3 text-lg font-black text-white hover:bg-white/25"
+                >
+                  C
+                </button>
+              </div>
+              <div className="w-1/3 p-1">
+                <button
+                  onClick={() => onAppendDigit('0')}
+                  className="w-full rounded-xl bg-white/15 py-3 text-2xl font-black text-white hover:bg-white/25"
+                >
+                  0
+                </button>
+              </div>
+              <div className="w-1/3 p-1">
+                <button
+                  onClick={onBackspace}
+                  className="w-full rounded-xl bg-white/15 py-3 text-lg font-black text-white hover:bg-white/25"
+                >
+                  ⌫
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 flex gap-3">
@@ -275,7 +282,7 @@ export default function App() {
       return (
         <>
           {isMockMode && (
-            <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
+            <div className="absolute left-1/2 top-4 z-50 w-11/12 max-w-xl -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
               <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
             </div>
           )}
@@ -292,7 +299,7 @@ export default function App() {
     return (
       <>
         {isMockMode && (
-          <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
+          <div className="absolute left-1/2 top-4 z-50 w-11/12 max-w-xl -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
             <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
           </div>
         )}
@@ -312,12 +319,12 @@ export default function App() {
   return (
     <div className="h-screen w-screen overflow-hidden">
       {isMockMode && (
-        <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
+        <div className="absolute left-1/2 top-4 z-50 w-11/12 max-w-xl -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
           <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
         </div>
       )}
       {kioskError && (
-        <div className="absolute left-1/2 top-4 z-50 w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-red-300/40 bg-red-900/90 px-4 py-3 text-white shadow-2xl">
+        <div className="absolute left-1/2 top-4 z-50 w-11/12 max-w-xl -translate-x-1/2 rounded-2xl border border-red-300/40 bg-red-900/90 px-4 py-3 text-white shadow-2xl">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-bold">⚠️ {kioskError}</p>
             <button
