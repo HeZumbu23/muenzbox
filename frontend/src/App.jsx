@@ -5,6 +5,7 @@ import CoinOverview from './components/CoinOverview.jsx'
 import ActiveSession from './components/ActiveSession.jsx'
 import AdminLogin from './components/admin/AdminLogin.jsx'
 import AdminDashboard from './components/admin/AdminDashboard.jsx'
+import Icon from './components/Icon.jsx'
 import { startSession } from './api.js'
 
 // Determine mode from URL path
@@ -46,7 +47,7 @@ function MultiplicationDialog({ challenge, answer, success, onAppendDigit, onBac
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-md rounded-3xl border border-white/20 bg-gradient-to-b from-blue-500 to-purple-600 p-6 shadow-2xl">
         <p className="text-white/80 text-sm font-bold uppercase tracking-wider">Sicherheitsfrage</p>
-        <h3 className="mt-1 text-white text-3xl font-black">🧠 Rechne kurz mit!</h3>
+        <h3 className="mt-1 text-white text-3xl font-black"><Icon emoji="🧠" size="1.8rem" /> Rechne kurz mit!</h3>
 
         {!success ? (
           <>
@@ -116,7 +117,7 @@ function MultiplicationDialog({ challenge, answer, success, onAppendDigit, onBac
           </>
         ) : (
           <div className="mt-5 rounded-2xl bg-green-500/25 border border-green-300/50 p-8 text-center">
-            <div className="text-7xl leading-none">✅</div>
+            <div className="leading-none"><Icon emoji="✅" size="4.375rem" /></div>
             <p className="mt-3 text-white text-3xl font-black">Richtig gerechnet!</p>
             <p className="mt-1 text-green-100 font-bold">Münze wird freigeschaltet …</p>
           </div>
@@ -303,7 +304,7 @@ export default function App() {
         <>
           {isMockMode && (
             <div className="absolute left-1/2 top-4 z-50 w-11/12 max-w-xl -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
-              <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
+              <p className="text-sm font-bold"><Icon emoji="🧪" size="1em" /> Mock-Modus ist aktiv.</p>
             </div>
           )}
           <AdminLogin
@@ -320,7 +321,7 @@ export default function App() {
       <>
         {isMockMode && (
           <div className="absolute left-1/2 top-4 z-50 w-11/12 max-w-xl -translate-x-1/2 rounded-2xl border border-amber-300/50 bg-amber-900/90 px-4 py-3 text-white shadow-2xl">
-            <p className="text-sm font-bold">🧪 Mock-Modus ist aktiv.</p>
+            <p className="text-sm font-bold"><Icon emoji="🧪" size="1em" /> Mock-Modus ist aktiv.</p>
           </div>
         )}
         <AdminDashboard
@@ -346,7 +347,7 @@ export default function App() {
       {kioskError && (
         <div className="absolute left-1/2 top-4 z-50 w-11/12 max-w-xl -translate-x-1/2 rounded-2xl border border-red-300/40 bg-red-900/90 px-4 py-3 text-white shadow-2xl">
           <div className="flex items-start justify-between gap-3">
-            <p className="text-sm font-bold">⚠️ {kioskError}</p>
+            <p className="text-sm font-bold"><Icon emoji="⚠️" size="1em" /> {kioskError}</p>
             <button
               onClick={() => setKioskError('')}
               className="rounded-lg bg-white/20 px-2 py-1 text-xs font-extrabold hover:bg-white/30"

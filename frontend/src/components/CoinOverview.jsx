@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { changeChildPin, getChildStatus, getActiveSession, setChildIcon } from '../api.js'
+import Icon from './Icon.jsx'
 
 // Only emojis available on iOS 9.3.5 (Unicode 8.0 / Emoji 1.0)
 const ANIMAL_ICONS = ['🐻', '🐼', '🐨', '🐯', '🐸', '🐧', '🐵', '🐶', '🐱', '🐰', '🐙', '🐮']
@@ -42,7 +43,7 @@ function SessionBanner({ session, onClick }) {
       <div className="flex items-center gap-4">
         <div className="flex-1">
           <p className="text-white font-extrabold text-xl">
-            {session.type === 'switch' ? '🎮 Switch' : '📺 TV'} läuft
+            <Icon emoji={session.type === 'switch' ? '🎮' : '📺'} size="1.2em" /> {session.type === 'switch' ? 'Switch' : 'TV'} läuft
           </p>
           <p className="text-white/70 text-sm font-bold mt-1">
             Minute {minuteNow} von {totalMinutes}
@@ -97,7 +98,7 @@ function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
     <div className="bg-white/15 rounded-3xl p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-white text-2xl font-extrabold">
-          {emoji} {label}
+          <Icon emoji={emoji} size="1.4em" /> {label}
         </span>
         <span className="text-white/70 text-lg font-bold">
           {coins} / {max}
@@ -123,7 +124,7 @@ function CoinRow({ label, emoji, coins, max, onStart, disabled }) {
               : 'bg-white/10 text-white/30 cursor-not-allowed'
             }`}
         >
-          {coins < 1 ? 'Keine Münzen' : disabled ? 'Läuft gerade…' : 'Starten 🚀'}
+          {coins < 1 ? 'Keine Münzen' : disabled ? 'Läuft gerade…' : <span>Starten <Icon emoji="🚀" size="1em" /></span>}
         </button>
       ) : (
         <div className="flex flex-col gap-3">
@@ -177,7 +178,7 @@ function ChildSettings({ childId, token, status, onClose, onSaved, onError }) {
     <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-5 w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-gray-900 text-xl font-black">⚙️ Einstellungen</p>
+          <p className="text-gray-900 text-xl font-black"><Icon emoji="⚙️" size="1em" /> Einstellungen</p>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 font-bold">Schließen</button>
         </div>
 
@@ -195,9 +196,9 @@ function ChildSettings({ childId, token, status, onClose, onSaved, onError }) {
                       onError?.(e.message || 'Icon konnte nicht gespeichert werden.')
                     }
                   }}
-                  className={`w-full text-3xl rounded-xl p-2 border ${status.icon === icon ? 'bg-yellow-100 border-yellow-400' : 'bg-gray-100 hover:bg-gray-200 border-transparent'}`}
+                  className={`w-full rounded-xl p-2 border flex items-center justify-center ${status.icon === icon ? 'bg-yellow-100 border-yellow-400' : 'bg-gray-100 hover:bg-gray-200 border-transparent'}`}
                 >
-                  {icon}
+                  <Icon emoji={icon} size="1.875rem" />
                 </button>
               </div>
             ))}
@@ -301,7 +302,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout,
       <div className="flex items-center justify-between px-6 pt-6 pb-4">
         <div>
           <p className="text-white/70 text-sm font-bold uppercase tracking-wider">Hallo</p>
-          <h2 className="text-white text-3xl font-black">{status.icon || '🐼'} {status.name}</h2>
+          <h2 className="text-white text-3xl font-black"><Icon emoji={status.icon || '🐼'} size="1.8em" /> {status.name}</h2>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -309,7 +310,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout,
             className="text-white/80 hover:text-white font-bold text-2xl transition-colors px-3 py-2"
             title="Einstellungen"
           >
-            ⚙️
+            <Icon emoji="⚙️" size="1.5rem" />
           </button>
           <button
             onClick={onLogout}
@@ -336,7 +337,7 @@ export default function CoinOverview({ childId, token, onSessionStart, onLogout,
           const label = periods.map((p) => `${p.von}–${p.bis} Uhr`).join('  •  ')
           return (
             <p className={`text-sm font-bold text-center ${status.is_weekend_or_holiday ? 'text-white/70' : 'text-white/60'}`}>
-              {status.is_weekend_or_holiday ? '🎉 ' : ''}{label}
+              {status.is_weekend_or_holiday ? <><Icon emoji="🎉" size="0.9em" />{' '}</> : ''}{label}
             </p>
           )
         })()}
