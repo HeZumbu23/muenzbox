@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getChildren } from '../api.js'
+import Icon from './Icon.jsx'
 
 // Only emojis available on iOS 9.3.5 (Unicode 8.0 / Emoji 1.0)
 const AVATARS = ['🐻', '🐼', '🐨', '🐯', '🐸', '🐧', '🐵', '🐶', '🐱', '🐰']
@@ -41,11 +42,11 @@ export default function ChildSelect({ onSelect }) {
               className="w-full bg-white/20 hover:bg-white/30 active:scale-95 transition-all duration-150
                          rounded-3xl p-6 flex flex-col items-center gap-3 shadow-xl border-2 border-white/20"
             >
-              <span className="text-7xl">{child.icon || AVATARS[i % AVATARS.length]}</span>
+              <Icon emoji={child.icon || AVATARS[i % AVATARS.length]} size="4.5rem" />
               <span className="text-white text-2xl font-extrabold">{child.name}</span>
               <div className="flex gap-4 text-white/90 text-lg font-bold">
-                <span>🎮 {child.switch_coins}</span>
-                <span>📺 {child.tv_coins}</span>
+                <span><Icon emoji="🎮" size="1.1em" /> {child.switch_coins}</span>
+                <span><Icon emoji="📺" size="1.1em" /> {child.tv_coins}</span>
               </div>
             </button>
           </div>
@@ -56,7 +57,7 @@ export default function ChildSelect({ onSelect }) {
         onClick={() => (window.location.href = '/eltern')}
         className="absolute right-6 bottom-14 z-20 sm:bottom-6 text-white/70 hover:text-white text-sm font-bold transition-colors bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full"
       >
-        Eltern ⚙️
+        Eltern <Icon emoji="⚙️" size="0.9em" />
       </button>
     </div>
   )

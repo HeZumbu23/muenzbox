@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { endSession } from '../api.js'
+import Icon from './Icon.jsx'
 
 function formatTime(seconds) {
   if (seconds <= 0) return '0:00'
@@ -70,7 +71,7 @@ export default function ActiveSession({ session, token, onEnd, onError }) {
     >
       {/* Device label */}
       <div className="text-center mt-4">
-        <span className="text-8xl">{isSwitch ? '🎮' : '📺'}</span>
+        <Icon emoji={isSwitch ? '🎮' : '📺'} size="6rem" />
         <h2 className="text-white text-3xl font-black mt-2">
           {isSwitch ? 'Nintendo Switch' : 'Fernseher'}
         </h2>
